@@ -21,7 +21,13 @@ const menu = {
     { nom: "Nutella", prix: 0.80 },
     { nom: "Spéculoos fondu", prix: 0.80 },
     { nom: "M&M's", prix: 0.80 }
-  ]
+  ],
+  infos: {
+    paiement: "Paiement en espèces uniquement",
+    livraison: "Livraison uniquement les samedis - 2€ en livraison",
+    fidelite: "5 tiramisus achetés = le 6e offert",
+    avertissement: "Sans alcool ni café - Contient du lait"
+  }
 };
 
 module.exports = menu;
