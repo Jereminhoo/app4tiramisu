@@ -1,11 +1,11 @@
 const express = require('express');
 const app = express();
+const menuRoutes = require('./routes/menuRoutes');
 const port = 3000;
 
-app.get('/', (req, res) => {
-  res.send('Le futur site de tiramisus de mon frère est en préparation !');
-});
+// On dit à Express d'utiliser nos routes avec le préfixe /api
+app.use('/api', menuRoutes);
 
 app.listen(port, () => {
-  console.log(`Serveur lancé sur http://localhost:${port}`);
+  console.log(`Le serveur de Misull tourne sur le port ${port}`);
 });
