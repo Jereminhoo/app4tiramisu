@@ -1,31 +1,45 @@
 ```mermaid
-graph TD
-    %% Acteurs
-    User((Visiteur / Client))
-    Admin((Administrateur))
+graph LR
+    %% Acteurs et leur hiérarchie
+    V((Visiteur))
+    C((Client))
+    A((Admin))
 
-    subgraph "Site de Tiramisu (Fictif)"
+    %% Généralisation (Héritage)
+    C -- "est un" --> V
+    A -- "est un" --> C
+
+    subgraph "Application Tiramisu"
+        %% Actions de base (Visiteur)
         UC1(Consulter le catalogue)
         UC2(Gérer son panier)
-        UC3(Passer une commande simulation)
-        UC4(Annuler une commande -30min)
-        UC5(S'authentifier)
-        UC6(Suivre sa fidélité)
-        UC7(Gérer le catalogue CRUD)
-        UC8(Suivre les commandes)
-        UC9(Recevoir notification Bot)
+        UC_Auth(S'authentifier)
+
+        %% Actions spécifiques (Client)
+        UC3(Passer commande simulation)
+        UC4(Annuler commande -30min)
+        UC5(Suivre sa fidélité)
+
+        %% Actions spécifiques (Admin)
+        UC6(Gérer le catalogue CRUD)
+        UC7(Suivre les commandes globales)
+        UC8(Recevoir notification Bot)
     end
 
-    %% Liens Client
-    User --- UC1
-    User --- UC2
-    User --- UC3
-    User --- UC4
-    User --- UC5
-    User --- UC6
+    %% Liens Visiteur (Le client et l'admin en héritent)
+    V --- UC1
+    V --- UC2
+    V --- UC_Auth
 
-    %% Liens Admin
-    Admin --- UC5
-    Admin --- UC7
-    Admin --- UC8
-    UC9 -.-> Admin
+    %% Liens Client uniquement
+    C --- UC3
+    C --- UC5
+    
+    %% Relations internes (Include / Extend)
+    UC3 -.->|include| UC_Auth
+    UC4 -.->|extend| UC3
+
+    %% Liens Admin uniquement
+    A --- UC6
+    A --- UC7
+    UC7 -.-> UC8
