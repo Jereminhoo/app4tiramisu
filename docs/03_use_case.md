@@ -1,18 +1,18 @@
 ```mermaid
-useCaseDiagram
-    actor "Visiteur / Client" as User
-    actor "Administrateur (Toi & Ton frère)" as Admin
+usecaseDiagram
+    actor User as Visiteur / Client
+    actor Admin as Administrateur
 
     package "Site de Tiramisu (Fictif)" {
-        usecase "Consulter le catalogue" as UC1
-        usecase "Gérer son panier" as UC2
-        usecase "Passer une commande (Simulation)" as UC3
-        usecase "Annuler une commande (Délai 30min)" as UC4
-        usecase "S'authentifier (Pseudo/MDP)" as UC5
-        usecase "Suivre sa fidélité" as UC6
-        usecase "Gérer le catalogue (CRUD)" as UC7
-        usecase "Suivre et modifier le statut des commandes" as UC8
-        usecase "Recevoir notification (Bot Discord/Telegram)" as UC9
+        usecase UC1 as Consulter le catalogue
+        usecase UC2 as Gérer son panier
+        usecase UC3 as Passer une commande (Simulation)
+        usecase UC4 as Annuler une commande (30min)
+        usecase UC5 as S'authentifier
+        usecase UC6 as Suivre sa fidélité
+        usecase UC7 as Gérer le catalogue (CRUD)
+        usecase UC8 as Suivre les commandes
+        usecase UC9 as Recevoir notification
     }
 
     User --> UC1
@@ -22,7 +22,7 @@ useCaseDiagram
     User --> UC5
     User --> UC6
 
-    UC9 <-- Admin : Reçoit
     Admin --> UC5
     Admin --> UC7
     Admin --> UC8
+    UC9 --> Admin
