@@ -1,4 +1,5 @@
 👤 Utilisateur (Visiteur)
+
 Voir le catalogue : En tant que visiteur, je veux consulter la liste des tiramisus disponibles afin de voir ce qui est proposé dans ce catalogue fictif.
 
 Détails du produit : En tant que visiteur, je veux voir la composition de chaque tiramisu pour vérifier les ingrédients et les allergènes.
@@ -7,7 +8,10 @@ Gestion du panier : En tant que visiteur, je veux ajouter ou retirer des tiramis
 
 Création de compte : En tant que visiteur, je veux pouvoir me créer un compte pour sauvegarder mes infos et tester le programme de fidélité.
 
+
+
 🛍️ Client (Connecté)
+
 Authentification : En tant que client, je veux me connecter/déconnecter de façon sécurisée pour protéger mes données.
 
 Personnalisation : En tant que client, je veux pouvoir choisir un supplément pour chaque tiramisu ajouté à ma simulation de commande.
@@ -20,7 +24,10 @@ Historique : En tant que client, je veux voir mes anciennes commandes fictives p
 
 Annulation de commande : En tant que client, je veux pouvoir annuler ma commande dans un délai de 30 minutes maximum après sa validation afin de tester la logique d'annulation.
 
+
+
 🛠️ Administrateur
+
 Gestion des commandes : En tant qu'admin, je veux voir la liste des commandes fictives reçues en temps réel pour tester l'interface de suivi.
 
 Statut des commandes : En tant qu'admin, je veux pouvoir modifier le statut d'une commande (ex: "Prête", "Livrée") pour simuler le flux de travail.
