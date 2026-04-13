@@ -1,3 +1,4 @@
+```mermaid
 classDiagram
     class Utilisateur {
         +int id_utilisateur
@@ -31,6 +32,6 @@ classDiagram
         +String supplement
     }
 
-    Utilisateur &quot;1&quot; -- &quot;*&quot; Commande : passe
-    Commande &quot;1&quot; *-- &quot;1..*&quot; LigneCommande : contient
-    LigneCommande &quot;*&quot; -- &quot;1&quot; Tiramisu : correspond à
+    Utilisateur "1" -- "*" Commande : passe
+    Commande "1" *-- "1..*" LigneCommande : contient
+    LigneCommande "*" -- "1" Tiramisu : correspond à
