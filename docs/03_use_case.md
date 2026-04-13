@@ -1,28 +1,31 @@
 ```mermaid
-usecaseDiagram
-    actor User as Visiteur / Client
-    actor Admin as Administrateur
+graph TD
+    %% Acteurs
+    User((Visiteur / Client))
+    Admin((Administrateur))
 
-    package "Site de Tiramisu (Fictif)" {
-        usecase UC1 as Consulter le catalogue
-        usecase UC2 as Gérer son panier
-        usecase UC3 as Passer une commande (Simulation)
-        usecase UC4 as Annuler une commande (30min)
-        usecase UC5 as S'authentifier
-        usecase UC6 as Suivre sa fidélité
-        usecase UC7 as Gérer le catalogue (CRUD)
-        usecase UC8 as Suivre les commandes
-        usecase UC9 as Recevoir notification
-    }
+    subgraph "Site de Tiramisu (Fictif)"
+        UC1(Consulter le catalogue)
+        UC2(Gérer son panier)
+        UC3(Passer une commande simulation)
+        UC4(Annuler une commande -30min)
+        UC5(S'authentifier)
+        UC6(Suivre sa fidélité)
+        UC7(Gérer le catalogue CRUD)
+        UC8(Suivre les commandes)
+        UC9(Recevoir notification Bot)
+    end
 
-    User --> UC1
-    User --> UC2
-    User --> UC3
-    User --> UC4
-    User --> UC5
-    User --> UC6
+    %% Liens Client
+    User --- UC1
+    User --- UC2
+    User --- UC3
+    User --- UC4
+    User --- UC5
+    User --- UC6
 
-    Admin --> UC5
-    Admin --> UC7
-    Admin --> UC8
-    UC9 --> Admin
+    %% Liens Admin
+    Admin --- UC5
+    Admin --- UC7
+    Admin --- UC8
+    UC9 -.-> Admin
