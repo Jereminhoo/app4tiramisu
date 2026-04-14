@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+model Utilisateur {
+  id_utilisateur Int        @id @default(autoincrement())
+  pseudo         String     @unique
+  motDePasse     String
+  role           String     @default("CLIENT")
+  pointsFidelite Int        @default(0)
+  estBanni       Boolean    @default(false)
+  commandes      Commande[]
+}
+
+model Tiramisu {
+  id_tiramisu      Int             @id @default(autoincrement())
+  nom              String
+  description      String?
+  listeIngredients String
+  // Le prix n'est plus ici car il dépend de la taille
+  lignesCommande   LigneCommande[]
+}
+
+model Taille {
+  id_taille      Int             @id @default(autoincrement())
+  nom            String          // ex: "Petite 450ml"
+  prix           Float           // ex: 3.5
+  lignesCommande LigneCommande[]
+}
+
+model Supplement {
+  id_supplement  Int             @id @default(autoincrement())
+  nom            String          // ex: "Kinder Bueno"
+  prix           Float           @default(0.80)
+  lignesCommande LigneCommande[] @relation("LigneToSupplement")
+}
+
+model Commande {
+  id_commande    Int             @id @default(autoincrement())
+  id_utilisateur Int
+  dateCreation   DateTime        @default(now())
+  statut         String          @default("EN_ATTENTE")
+  prixTotal      Float
+  utilisateur    Utilisateur     @relation(fields: [id_utilisateur], references: [id_utilisateur])
+  lignes         LigneCommande[]
+}
+
+model LigneCommande {
+  id_ligne     Int          @id @default(autoincrement())
+  id_commande  Int
+  id_tiramisu  Int
+  id_taille    Int
+  quantite     Int          @default(1)
+  
+  commande     Commande     @relation(fields: [id_commande], references: [id_commande])
+  tiramisu     Tiramisu     @relation(fields: [id_tiramisu], references: [id_tiramisu])
+  taille       Taille       @relation(fields: [id_taille], references: [id_taille])
+  
+  // Une ligne peut avoir plusieurs suppléments (ex: Nutella + M&M's)
+  supplements  Supplement[] @relation("LigneToSupplement")
+}
