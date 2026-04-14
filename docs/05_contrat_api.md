@@ -27,7 +27,7 @@ Ce document liste toutes les routes (URL) que le front-end React peut appeler su
 | **GET** | `/api/commandes/historique`| Récupère les anciennes commandes du client connecté | *Rien* | `200 OK` + Tableau des commandes |
 | **PUT** | `/api/commandes/:id/annuler`| Annule une commande (si - de 30 min) | *Rien* (l'ID est dans l'URL) | `200 OK` + Nouveau statut |
 
-## 🛠️ 4. Administration (Toi & Ton Frère)
+## 🛠️ 4. Administration
 
 > ⚠️ **Important :** Express vérifiera que le Token envoyé appartient bien à un compte avec le rôle "Admin".
 
