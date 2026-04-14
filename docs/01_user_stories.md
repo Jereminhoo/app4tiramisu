@@ -34,6 +34,6 @@ Statut des commandes : En tant qu'admin, je veux pouvoir modifier le statut d'un
 
 Gestion du catalogue (CRUD) : En tant qu'admin, je veux pouvoir ajouter, modifier ou supprimer un tiramisu du site pour gérer la base de données des produits de démonstration.
 
-Contact client : En tant qu'admin, je veux voir les coordonnées liées à une commande spécifique pour tester l'affichage des données client.
-
 Notification de commande : En tant qu'admin, je veux recevoir une alerte instantanée lorsqu'une simulation de commande est validée afin de lancer la préparation en direct.
+
+Gestion des comptes : En tant qu'admin, je veux pouvoir consulter la liste de tous les utilisateurs inscrits afin de gérer les comptes (ex: bannissement).

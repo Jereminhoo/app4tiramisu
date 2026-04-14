@@ -6,6 +6,7 @@ classDiagram
         +String motDePasse
         +String role
         +int pointsFidelite
+        +boolean estBanni
     }
 
     class Tiramisu {

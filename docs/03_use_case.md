@@ -24,6 +24,8 @@ graph LR
         UC6(Gérer le catalogue CRUD)
         UC7(Suivre les commandes globales)
         UC8(Recevoir notification Bot)
+        UC9(Consulter la liste des utilisateurs)
+        UC10(Bannir un utilisateur)
     end
 
     %% Liens Visiteur (Le client et l'admin en héritent)
@@ -38,8 +40,10 @@ graph LR
     %% Relations internes (Include / Extend)
     UC3 -.->|include| UC_Auth
     UC4 -.->|extend| UC3
+    UC10 -.->|extend| UC9
 
     %% Liens Admin uniquement
     A --- UC6
     A --- UC7
+    A --- UC9
     UC7 -.-> UC8
