@@ -1,14 +1,17 @@
+require('dotenv').config(); 
 const express = require('express');
 const cors = require('cors');
 
 const app = express();
 
 app.use(cors());
+app.use(express.json()); // Permet à Express de lire le JSON
+
 const menuRoutes = require('./routes/menuRoutes');
 const port = 3000;
 
-// On dit à Express d'utiliser nos routes avec le préfixe /api
-app.use('/api', menuRoutes);
+// On dit à Express d'utiliser nos routes avec le bon préfixe /api/menu
+app.use('/api/menu', menuRoutes);
 
 // La route pour la page d'accueil (la racine)
 app.get('/', (req, res) => {
