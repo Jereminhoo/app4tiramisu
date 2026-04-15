@@ -13,6 +13,12 @@ const port = 3000;
 // On dit à Express d'utiliser nos routes avec le bon préfixe /api/menu
 app.use('/api/menu', menuRoutes);
 
+// Branchement des routes utilisateurs sur le préfixe /api/users
+app.use('/api/users', require('./routes/userRoutes'));
+
+// Branchement des routes commandes sur le préfixe /api/orders
+app.use('/api/orders', require('./routes/orderRoutes'));
+
 // La route pour la page d'accueil (la racine)
 app.get('/', (req, res) => {
   res.send(`
