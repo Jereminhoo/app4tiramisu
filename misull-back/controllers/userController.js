@@ -1,46 +1,35 @@
+// controllers/userController.js
 const userService = require('../services/userService');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken'); // On importe l'outil JWT
 
 const register = async (req, res) => {
   try {
     const { pseudo, motDePasse } = req.body;
 
-    // 1. VERIFICATION DU PSEUDO
-    // - Pas d'espaces : /^\S+$/
-    // - Au moins une majuscule : /[A-Z]/
-    // - Minimum 3 caractères
     const pseudoRegex = /^(?=.*[A-Z])\S{3,}$/;
-
     if (!pseudoRegex.test(pseudo)) {
       return res.status(400).json({ 
         message: "Pseudo invalide : 3 caractères min, une majuscule et aucun espace." 
       });
     }
 
-    // 2. VERIFICATION DU MOT DE PASSE
-    // - Pas d'espaces : /^\S+$/
-    // - Minimum 8 caractères
-    // - Au moins une lettre : /[a-zA-Z]/
-    // - Au moins un caractère spécial : /[!@#$%^&*(),.?":{}|<>]/
     const mdpRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>])\S{8,}$/;
-
     if (!mdpRegex.test(motDePasse)) {
       return res.status(400).json({ 
         message: "Mot de passe trop faible : 8 caractères min, une lettre, un caractère spécial et aucun espace." 
       });
     }
 
-    // 3. VERIFICATION DOUBLON (on garde ce qu'on avait)
     const existingUser = await userService.getUserByPseudo(pseudo);
     if (existingUser) {
       return res.status(400).json({ message: "Ce pseudo est déjà pris." });
     }
 
-    // 4. CREATION
     const newUser = await userService.createUser(pseudo, motDePasse);
     
     res.status(201).json({ 
-      message: "Utilisateur créé !",
+      message: "Compte créé avec succès !",
       user: { id: newUser.id_utilisateur, pseudo: newUser.pseudo }
     });
 
@@ -54,28 +43,42 @@ const login = async (req, res) => {
   try {
     const { pseudo, motDePasse } = req.body;
 
-    // 1. On cherche si l'utilisateur existe dans la base
+    // 1. L'utilisateur existe ?
     const user = await userService.getUserByPseudo(pseudo);
-
     if (!user) {
-      // Si on ne trouve pas le pseudo, on renvoie une erreur
-      // Note : on reste vague ("Pseudo ou mdp incorrect") pour la sécurité
       return res.status(401).json({ message: "Pseudo ou mot de passe incorrect." });
     }
 
-    // 2. On compare le mot de passe envoyé avec celui qui est crypté en base
-    // bcrypt.compare fait tout le travail de vérification pour nous
+    // 2. Compte banni ?
+    // On bloque avant même de vérifier le mot de passe
+    if (user.estBanni) {
+      return res.status(403).json({ message: "Ce compte a été banni." });
+    }
+
+    // 3. Mot de passe correct ?
     const isMatch = await bcrypt.compare(motDePasse, user.motDePasse);
-
     if (!isMatch) {
-      // Si le mot de passe ne correspond pas
       return res.status(401).json({ message: "Pseudo ou mot de passe incorrect." });
     }
 
-    // 3. Si tout est bon, on connecte l'utilisateur
-    // Pour l'instant, on renvoie juste un message de succès et ses infos
+    // 4. On génère le JWT
+    // jwt.sign() prend 3 arguments :
+    // - Le payload : les infos qu'on veut stocker dans le token
+    // - Le secret : la clé secrète du .env pour signer le token
+    // - Les options : ici "expiresIn" fait expirer le token après 24h
+    const token = jwt.sign(
+      { 
+        id: user.id_utilisateur,  // L'id de l'utilisateur
+        role: user.role            // Son rôle (CLIENT ou ADMIN)
+      },
+      process.env.JWT_SECRET,     // La clé secrète dans ton .env
+      { expiresIn: '24h' }        // Le token expire après 24 heures
+    );
+
+    // 5. On renvoie le token au frontend
     res.json({
       message: "Connexion réussie !",
+      token: token, // Le frontend va stocker ce token
       user: {
         id: user.id_utilisateur,
         pseudo: user.pseudo,

@@ -1,15 +1,4 @@
-// 1. LES IMPORTS : On va chercher les outils nécessaires
-const { PrismaClient } = require('@prisma/client'); // Prisma, l'outil principal pour lire la base de données
-const { Pool } = require('pg'); // L'outil "pg" qui permet de se connecter à PostgreSQL
-const { PrismaPg } = require('@prisma/adapter-pg'); // L'adaptateur qui fait fonctionner Prisma avec "pg" (notre solution au bug)
-
-// 2. LA CONNEXION : On relie le code à ta base de données
-// On crée une connexion en utilisant l'URL qui se trouve dans ton fichier .env
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-// On prépare l'adaptateur avec cette connexion
-const adapter = new PrismaPg(pool);
-// On démarre Prisma en lui disant d'utiliser notre adaptateur
-const prisma = new PrismaClient({ adapter });
+const prisma = require('../prisma/client'); // On importe le client partagé
 
 // 3. LES FONCTIONS : On crée les requêtes pour aller chercher les données
 

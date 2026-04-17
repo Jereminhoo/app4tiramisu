@@ -1,11 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const { Pool } = require('pg');
-const { PrismaPg } = require('@prisma/adapter-pg');
-
-// Toujours la même connexion à la base de données
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const prisma = require('../prisma/client'); // On importe le client partagé
 
 const createOrder = async (id_utilisateur, prixTotal, lignes) => {
   // prisma.commande.create va insérer une nouvelle ligne dans la table Commande

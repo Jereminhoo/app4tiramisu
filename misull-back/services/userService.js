@@ -1,12 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
-const { Pool } = require('pg');
-const { PrismaPg } = require('@prisma/adapter-pg');
 const bcrypt = require('bcrypt'); // Outil pour crypter les mots de passe
+const prisma = require('../prisma/client'); //On importe le client partagé
 
-// Connexion à la base de données (même setup que pour le menu)
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
 
 // Fonction pour enregistrer un nouvel utilisateur
 const createUser = async (pseudo, motDePasse) => {

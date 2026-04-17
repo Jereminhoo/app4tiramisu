@@ -1,44 +1,89 @@
-require('dotenv').config(); 
+// index.js
+// Point d'entrée principal du serveur Express de Misull
+
+// Charge les variables du fichier .env (DATABASE_URL, JWT_SECRET, etc.)
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');               // Sécurité des en-têtes HTTP
+const rateLimit = require('express-rate-limit'); // Protection contre la force brute
 
 const app = express();
+const port = process.env.PORT || 3000; // On lit le port depuis .env, sinon 3000 par défaut
 
-app.use(cors());
-app.use(express.json()); // Permet à Express de lire le JSON
+// ─────────────────────────────────────────────
+// MIDDLEWARES GLOBAUX (s'appliquent à TOUTES les routes)
+// ─────────────────────────────────────────────
 
-const menuRoutes = require('./routes/menuRoutes');
-const port = 3000;
+// helmet() ajoute ~15 en-têtes HTTP de sécurité automatiquement
+// Par exemple : empêche les navigateurs d'exécuter du code malveillant injecté
+app.use(helmet());
 
-// On dit à Express d'utiliser nos routes avec le bon préfixe /api/menu
-app.use('/api/menu', menuRoutes);
+// On autorise uniquement les requêtes venant de notre frontend React
+// Toute autre origine sera bloquée par le navigateur
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173'
+}));
 
-// Branchement des routes utilisateurs sur le préfixe /api/users
-app.use('/api/users', require('./routes/userRoutes'));
+// Permet à Express de lire le JSON envoyé dans le body des requêtes
+app.use(express.json());
 
-// Branchement des routes commandes sur le préfixe /api/orders
+// ─────────────────────────────────────────────
+// RATE LIMITERS (protection contre les attaques)
+// ─────────────────────────────────────────────
+
+// Limiteur général : max 100 requêtes par IP toutes les 15 minutes
+// Protège toute l'API contre les abus
+const limiterGeneral = rateLimit({
+  windowMs: 15 * 60 * 1000, // Fenêtre de 15 minutes en millisecondes
+  max: 100,                  // Maximum 100 requêtes par IP dans cette fenêtre
+  message: { message: 'Trop de requêtes, réessaie dans 15 minutes.' }
+});
+
+// Limiteur strict pour l'authentification : max 10 tentatives par 15 minutes
+// Empêche quelqu'un d'essayer des milliers de mots de passe (force brute)
+const limiterAuth = rateLimit({
+  windowMs: 15 * 60 * 1000, // Même fenêtre de 15 minutes
+  max: 10,                   // Mais seulement 10 tentatives de connexion/inscription
+  message: { message: 'Trop de tentatives, réessaie dans 15 minutes.' }
+});
+
+// On applique le limiteur général à toute l'API
+app.use('/api', limiterGeneral);
+
+// ─────────────────────────────────────────────
+// ROUTES
+// ─────────────────────────────────────────────
+
+// Routes du menu (publiques - tout le monde peut voir les produits)
+app.use('/api/menu', require('./routes/menuRoutes'));
+
+// Routes utilisateurs (publiques pour register/login, mais avec limiteur strict)
+app.use('/api/users', limiterAuth, require('./routes/userRoutes'));
+
+// Routes commandes (protégées - le middleware verifierToken est dans orderRoutes.js)
 app.use('/api/orders', require('./routes/orderRoutes'));
 
-// La route pour la page d'accueil (la racine)
+// ─────────────────────────────────────────────
+// PAGE D'ACCUEIL
+// ─────────────────────────────────────────────
+
+// Route racine - page d'accueil simple en HTML
 app.get('/', (req, res) => {
   res.send(`
     <div style="text-align: center; font-family: sans-serif; margin-top: 50px;">
       <h1>Bienvenue chez Misull 🍰</h1>
-      <p>Le site officiel de commande est en cours de préparation !</p>
-      <p>En attendant, venez voir nos Tira-crêpes et passez commande sur notre compte Instagram :</p>
-      
-      <a href="https://www.instagram.com/misulalouviere" target="_blank" style="color: #8b5a2b; font-weight: bold; font-size: 20px; text-decoration: none;">
-        📸 @misulalouviere
+      <p>Le site officiel de commande est en cours de preparation !</p>
+      <p>En attendant, passez commande sur Instagram :</p>
+      <a href="https://www.instagram.com/misulalouviere" target="_blank" 
+         style="color: #8b5a2b; font-weight: bold; font-size: 20px; text-decoration: none;">
+        @misulalouviere
       </a>
-      
-      <br><br><br>
-      
-      <p style="font-size: 12px; color: gray;">
-        Curieux ? <a href="/api/menu" style="color: gray;">Voir les données brutes du menu</a>
-      </p>
     </div>
   `);
 });
+
 
 app.listen(port, () => {
   console.log(`Le serveur de Misull tourne sur le port ${port}`);
