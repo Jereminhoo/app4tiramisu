@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import useAuthStore from '../store/useAuthStore';
 import '../App.css';
+import Chargement from '../components/Chargement';
+
 
 function Commande() {
 
@@ -80,8 +82,8 @@ function Commande() {
     const ligne = {
       id_tiramisu: selection.tiramisu.id_tiramisu,
       nom: selection.tiramisu.nom,
-      id_gout: selection.gout.id_gout,       // 👈 Ajout
-      nomGout: selection.gout.nom,            // 👈 Ajout
+      id_gout: selection.gout.id_gout,      
+      nomGout: selection.gout.nom,          
       id_taille: selection.taille.id_taille,
       nomTaille: selection.taille.nom,
       prix: parseFloat(calculerPrix()),
@@ -96,7 +98,7 @@ function Commande() {
     setSelection({ tiramisu: null, gout: null, taille: null, supplements: [], quantite: 1 });
   };
 
-  if (!menu) return <div className="loading">Chargement de la carte...</div>;
+  if (!menu) return <Chargement texte="Chargement de la carte..." />;
 
   return (
     <div className="app-container">

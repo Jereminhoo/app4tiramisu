@@ -5,6 +5,8 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios'; // On utilise notre instance Axios centralisée
 import '../App.css'; // Import du CSS global
+import Chargement from '../components/Chargement';
+
 
 function Home() {
   // État local pour stocker les données du menu venant de l'API
@@ -19,7 +21,8 @@ function Home() {
   }, []);
 
   // Tant que le menu n'est pas chargé, on affiche un message
-  if (!menu) return <div className="loading">Chargement de la carte...</div>;
+  if (!menu) return <Chargement texte="Chargement de la carte..." />;
+
 
   return (
     <div className="app-container">
@@ -35,7 +38,6 @@ function Home() {
         <img
           src="/welcome.jpg"
           alt="Welcome to Misull"
-          style={{ maxWidth: '100%', borderRadius: '10px' }}
         />
       </div>
 
@@ -72,7 +74,7 @@ function Home() {
 
         {/* Section tailles et prix */}
         <section className="category-section">
-          <h2 className="category-title">Tailles & Prix</h2>
+          <h2 className="category-title">Tailles / Prix</h2>
           <div className="flavors-container">
             {menu.tailles.map((taille) => (
               <span key={taille.id_taille} className="price-badge">
@@ -116,6 +118,18 @@ function Home() {
         </section>
 
       </main>
+      {/* Version — discrète, en bas à droite */}
+      <p style={{
+        position: 'fixed',      /* Reste visible même en scrollant */
+        bottom: '10px',
+        right: '12px',
+        fontSize: '0.7rem',
+        color: '#c8b49c',       /* Couleur marron clair, très discret */
+        margin: 0,
+        userSelect: 'none',     /* On peut pas la sélectionner au clic */
+      }}>
+        v4.0.0
+      </p>
     </div>
   );
 }

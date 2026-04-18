@@ -196,9 +196,9 @@ function Admin() {
                 color: onglet === o ? 'white' : '#3b2f2f',
               }}
             >
-              {o === 'commandes' && '📋 Commandes'}
-              {o === 'utilisateurs' && '👥 Utilisateurs'}
-              {o === 'catalogue' && '🍰 Catalogue'}
+              {o === 'commandes' && 'Commandes'}
+              {o === 'utilisateurs' && 'Utilisateurs'}
+              {o === 'catalogue' && 'Catalogue'}
             </button>
           ))}
         </div>
@@ -245,7 +245,7 @@ function Admin() {
                   <div style={{ margin: '10px 0', fontSize: '0.9rem', color: '#555' }}>
                     {commande.lignes.map((ligne) => (
                       <div key={ligne.id_ligne}>
-                        • - {ligne.tiramisu.nom} - {ligne.taille.nom} - {ligne.gout.nom} x{ligne.quantite}
+                        {ligne.tiramisu.nom} - {ligne.taille.nom} - {ligne.gout.nom} x{ligne.quantite}
                         {ligne.supplements.length > 0 && (
                           <span style={{ color: '#c0392b' }}>
                             {' '}(+ {ligne.supplements.map(s => s.nom).join(', ')})

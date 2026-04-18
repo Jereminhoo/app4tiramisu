@@ -1,0 +1,77 @@
+/* ============================================
+   NotFound.css — Page 404 personnalisée
+   Style sobre dans le thème Misull
+   ============================================ */
+
+/* Conteneur centré pleine hauteur */
+.notfound-container {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--espace-lg);
+}
+
+/* Le grand "404" */
+.notfound-code {
+  font-family: var(--police-titre); /* Playfair Display */
+  font-size: 8rem;
+  font-weight: 700;
+  color: var(--couleur-marron);
+  line-height: 1;
+  margin-bottom: var(--espace-xs);
+
+  /* Légère ombre pour donner du relief */
+  text-shadow: 3px 3px 0px var(--couleur-marron-mid);
+}
+
+/* Séparateur décoratif entre le 404 et le message */
+.notfound-separateur {
+  width: 60px;
+  height: 3px;
+  background-color: var(--couleur-rouge);
+  border: none;
+  margin: var(--espace-sm) auto;
+  border-radius: 2px;
+}
+
+/* Titre principal */
+.notfound-titre {
+  font-family: var(--police-titre);
+  font-size: 1.6rem;
+  color: var(--couleur-marron);
+  margin-bottom: var(--espace-xs);
+}
+
+/* Sous-titre / explication */
+.notfound-message {
+  color: var(--couleur-marron);
+  opacity: 0.65;
+  font-size: 1rem;
+  max-width: 380px;
+  margin-bottom: var(--espace-lg);
+  line-height: 1.7;
+}
+
+/* Bouton retour accueil */
+.notfound-bouton {
+  background-color: var(--couleur-marron);
+  color: var(--couleur-creme);
+  border: none;
+  padding: 14px 32px;
+  border-radius: var(--rayon-sm);
+  font-size: 1rem;
+  font-family: var(--police-texte);
+  cursor: pointer;
+  text-decoration: none; /* Car on utilise un <Link> qui ressemble a un bouton */
+  transition: background-color 0.2s, transform 0.15s;
+  display: inline-block;
+}
+
+/* Effet au survol */
+.notfound-bouton:hover {
+  background-color: var(--couleur-rouge);
+  transform: translateY(-2px); /* Légère élévation */
+}

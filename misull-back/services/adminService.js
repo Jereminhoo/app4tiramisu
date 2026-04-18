@@ -80,20 +80,26 @@ const getTousUtilisateurs = async () => {
 
 // Banni ou débanni un utilisateur
 const toggleBannissement = async (id_utilisateur) => {
-  // On récupère l'état actuel
   const user = await prisma.utilisateur.findUnique({
     where: { id_utilisateur: parseInt(id_utilisateur) }
   });
 
   if (!user) throw new Error('Utilisateur introuvable.');
-
-  // On ne peut pas bannir un admin !
   if (user.role === 'ADMIN') throw new Error('Impossible de bannir un administrateur.');
 
-  // On inverse l'état : banni → débanni, débanni → banni
+  // On inverse l'état et on utilise select pour ne PAS renvoyer le mot de passe
   return await prisma.utilisateur.update({
     where: { id_utilisateur: parseInt(id_utilisateur) },
-    data: { estBanni: !user.estBanni }
+    data: { estBanni: !user.estBanni },
+    // select explicite — on choisit exactement ce qu'on renvoie
+    // motDePasse est volontairement absent !
+    select: {
+      id_utilisateur: true,
+      pseudo: true,
+      role: true,
+      pointsFidelite: true,
+      estBanni: true,
+    }
   });
 };
 

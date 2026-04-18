@@ -1,126 +1,180 @@
+/* ============================================
+   App.css — Styles de la page Home
+   On utilise var(--nom) pour toutes les couleurs
+   définies dans index.css. Avantage : si on
+   change une couleur dans index.css, ca se
+   répercute partout automatiquement.
+   ============================================ */
+
+/* Conteneur principal de la page */
 .app-container {
-  background-color: #f7f3eb; /* Couleur crème de tes posts */
+  /* Plus besoin de background ni de font-family :
+     ca vient déjà du body dans index.css ! */
   min-height: 100vh;
-  padding: 20px;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
-  color: #3b2f2f; /* Marron foncé pour le texte */
+  padding: var(--espace-sm); /* 16px au lieu de 20px codé en dur */
 }
 
+/* En-tête avec logo et sous-titre */
 .header {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--espace-md); /* 24px */
 }
 
+/* Logo rond */
 .logo {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
+  width: 120px;   /* Un peu plus petit, le logo était trop imposant */
+  height: 120px;
+  border-radius: var(--rayon-rond); /* 50% — défini dans index.css */
   object-fit: cover;
-  margin-bottom: 10px;
+  margin-bottom: var(--espace-xs); /* 8px */
+
+  /* Petite ombre pour donner du relief au logo */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
 }
 
+/* Slogan sous le logo */
 .subtitle {
   font-style: italic;
-  font-size: 1.1rem;
+  font-size: 1rem;
+  color: var(--couleur-marron); /* Variable au lieu de #3b2f2f */
+  opacity: 0.8; /* Légèrement plus discret que le titre */
 }
 
+/* Image de bienvenue (la belle illus de l'Instagram) */
 .welcome-banner {
-  max-width: 800px;
-  margin: 0 auto 30px auto;
+  max-width: 700px;
+  margin: 0 auto var(--espace-lg) auto; /* 40px en bas */
   text-align: center;
 }
 
+/* L'image elle-même dans la bannière */
+.welcome-banner img {
+  /* On déplace le style inline du JSX ici — bonne pratique ! */
+  max-width: 100%;
+  border-radius: var(--rayon-md); /* 12px */
+}
+
+/* Zone principale de contenu */
 .main-content {
   max-width: 800px;
-  margin: 0 auto;
+  margin: 0 auto; /* Centré horizontalement */
 }
 
+/* Chaque section (Desserts, Tailles, Supplements...) */
 .category-section {
-  background-color: #ffffff;
-  padding: 25px;
-  border-radius: 12px;
-  margin-bottom: 25px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  background-color: var(--couleur-blanc);
+  padding: var(--espace-md); /* 24px au lieu de 25px */
+  border-radius: var(--rayon-md); /* 12px */
+  margin-bottom: var(--espace-md);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
+/* Titre de chaque section (NOS DESSERTS, TAILLES...) */
 .category-title {
-  border-bottom: 1px solid #c8b49c;
-  padding-bottom: 10px;
+  font-family: var(--police-titre); /* Playfair Display ! */
+  border-bottom: 1px solid var(--couleur-marron-mid);
+  padding-bottom: var(--espace-xs);
   text-transform: uppercase;
   letter-spacing: 1px;
   font-size: 1.2rem;
   margin-top: 0;
+  color: var(--couleur-marron);
 }
 
+/* Liste des desserts en colonne */
 .dessert-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  margin-top: 15px;
+  gap: var(--espace-md);
+  margin-top: var(--espace-sm);
 }
 
+/* Nom du dessert */
 .dessert-name {
-  margin: 0 0 5px 0;
-  font-size: 1.3rem;
+  font-family: var(--police-titre); /* Playfair pour les noms aussi */
+  font-size: 1.2rem;
+  margin-bottom: var(--espace-xs);
 }
 
+/* Description du dessert */
 .dessert-desc {
-  margin: 0 0 8px 0;
-  color: #5a4a4a;
+  font-size: 0.95rem;
+  color: var(--couleur-marron);
+  opacity: 0.75;
+  margin-bottom: var(--espace-xs);
 }
 
+/* Liste des ingrédients */
 .dessert-ingredients {
-  margin: 0;
   font-weight: bold;
-  color: #c0392b; /* Rouge pour rappeler ton post Instagram */
-  font-size: 0.9rem;
+  color: var(--couleur-rouge); /* Rouge, comme sur l'Instagram */
+  font-size: 0.88rem;
 }
 
+/* Conteneur des badges (goûts, suppléments, tailles) */
 .flavors-container {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 15px;
+  gap: var(--espace-xs);
+  flex-wrap: wrap; /* Passe à la ligne si trop de badges */
+  margin-top: var(--espace-sm);
 }
 
-.price-badge, .supp-badge {
-  background-color: #f0e6d2;
-  border: 1px solid #c8b49c;
-  padding: 10px 15px;
-  border-radius: 5px;
-  font-size: 1rem;
+/* Badge taille/prix et badge supplément — même style de base */
+.price-badge,
+.supp-badge {
+  background-color: var(--couleur-creme-dark);
+  border: 1px solid var(--couleur-marron-mid);
+  padding: var(--espace-xs) var(--espace-sm); /* 8px 16px */
+  border-radius: var(--rayon-sm);
+  font-size: 0.95rem;
 }
 
+/* Texte "OPTIONNEL" en rouge */
 .optionnel-text {
-  color: #c0392b;
+  color: var(--couleur-rouge);
   font-weight: bold;
-  font-size: 0.9rem;
-  margin-top: -5px;
+  font-size: 0.88rem;
+  margin-top: 4px;
 }
 
+/* Grille des infos importantes (2 colonnes) */
 .info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  margin-top: 30px;
+  gap: var(--espace-sm);
+  margin-top: var(--espace-lg);
 }
 
+/* Chaque case info */
 .info-box {
-  background-color: #ffffff;
-  border: 2px solid #d4b895;
-  padding: 15px;
-  border-radius: 8px;
+  background-color: var(--couleur-blanc);
+  border: 2px solid var(--couleur-marron-mid);
+  padding: var(--espace-sm);
+  border-radius: var(--rayon-sm);
   font-size: 0.9rem;
 }
 
+/* Le titre en gras dans chaque case */
 .info-box strong {
   display: block;
-  margin-bottom: 5px;
+  font-family: var(--police-titre);
+  margin-bottom: 6px;
   font-size: 1rem;
+  color: var(--couleur-marron);
 }
 
+/* ============================================
+   RESPONSIVE — Mobile (moins de 600px)
+   Sur téléphone, tout passe en 1 colonne
+   ============================================ */
 @media (max-width: 600px) {
   .info-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* Le logo est un peu plus petit sur mobile */
+  .logo {
+    width: 90px;
+    height: 90px;
   }
 }

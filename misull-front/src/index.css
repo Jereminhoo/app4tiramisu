@@ -1,6 +1,90 @@
-body, html {
+/* ============================================
+   RESET GLOBAL
+   Les navigateurs (Chrome, Firefox...) ajoutent
+   des marges et paddings par défaut. On les supprime
+   pour avoir un comportement identique partout.
+   ============================================ */
+*, *::before, *::after {
+  box-sizing: border-box; /* La largeur inclut padding et border */
   margin: 0;
   padding: 0;
-  width: 100%;
-  height: 100%;
+}
+
+/* ============================================
+   VARIABLES CSS (Design Tokens)
+   Définis une seule fois ici, utilisables partout
+   avec var(--nom-de-la-variable)
+   ============================================ */
+:root {
+  /* Couleurs principales inspirées de l'Instagram Misull */
+  --couleur-creme:      #f7f3eb;  /* Fond general, tres doux */
+  --couleur-creme-dark: #f0e6d2;  /* Badges, cartes secondaires */
+  --couleur-marron:     #3b2f2f;  /* Texte principal */
+  --couleur-marron-mid: #c8b49c;  /* Bordures, séparateurs */
+  --couleur-rouge:      #c0392b;  /* Accent, mots importants */
+  --couleur-blanc:      #ffffff;  /* Cartes, sections */
+
+  /* Typographie */
+  --police-titre: 'Playfair Display', Georgia, serif; /* Elegant, comme l'Instagram */
+  --police-texte: 'Lato', 'Helvetica Neue', sans-serif; /* Lisible pour le corps */
+
+  /* Espacements (pour etre coherent partout) */
+  --espace-xs: 8px;
+  --espace-sm: 16px;
+  --espace-md: 24px;
+  --espace-lg: 40px;
+
+  /* Rayons des coins arrondis */
+  --rayon-sm: 8px;
+  --rayon-md: 12px;
+  --rayon-rond: 50%;
+}
+
+/* ============================================
+   BASE DU BODY
+   S'applique a toute la page automatiquement
+   ============================================ */
+body {
+  background-color: var(--couleur-creme);
+  color: var(--couleur-marron);
+  font-family: var(--police-texte);
+  line-height: 1.6; /* Espacement entre lignes pour la lisibilite */
+}
+
+/* ============================================
+   ANIMATION DE CHARGEMENT
+   Utilisée sur toutes les pages pendant le
+   chargement des données depuis l'API
+   ============================================ */
+
+/* Conteneur centré */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: var(--espace-sm);
+  color: var(--couleur-marron);
+  font-family: var(--police-titre);
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* Le cercle qui tourne */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--couleur-marron-mid);  /* Cercle de base */
+  border-top-color: var(--couleur-rouge);        /* La partie qui tourne en rouge */
+  border-radius: 50%;
+
+  /* L'animation : rotation infinie */
+  animation: rotation 0.9s linear infinite;
+}
+
+/* Définition de l'animation de rotation */
+@keyframes rotation {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }

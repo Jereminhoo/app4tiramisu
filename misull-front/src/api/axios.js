@@ -1,35 +1,58 @@
 // src/api/axios.js
-// Ce fichier configure Axios une seule fois pour toute l'application.
-// Au lieu de répéter "http://localhost:3000" dans chaque composant,
-// on le définit ici et tous les appels API partent de cette base.
-
 import axios from 'axios';
+import useAuthStore from '../store/useAuthStore';
 
-// On crée une instance Axios personnalisée
 const api = axios.create({
-  baseURL: 'http://localhost:3000', // L'adresse de ton serveur Express
+  baseURL: 'http://localhost:3000',
 });
 
 // ─────────────────────────────────────────────
 // INTERCEPTEUR DE REQUÊTE
 // ─────────────────────────────────────────────
-// Un intercepteur c'est comme un agent qui inspecte CHAQUE requête
-// avant qu'elle parte vers le serveur.
-// Ici, il ajoute automatiquement le token JWT dans les headers
-// pour que tu n'aies pas à le faire manuellement à chaque appel.
-
+// Ajoute automatiquement le token JWT à chaque requête
 api.interceptors.request.use((config) => {
-  // On va chercher le token dans le localStorage du navigateur
-  // C'est là que Zustand va le stocker quand l'utilisateur se connecte
   const token = localStorage.getItem('token');
 
   if (token) {
-    // Si un token existe, on l'ajoute automatiquement à chaque requête
-    // sous la forme "Bearer eyJhbGci..." que ton middleware auth.js attend
     config.headers['Authorization'] = `Bearer ${token}`;
   }
 
-  return config; // On laisse partir la requête
+  return config;
 });
+
+// ─────────────────────────────────────────────
+// INTERCEPTEUR DE RÉPONSE
+// ─────────────────────────────────────────────
+// Inspecte chaque réponse du serveur AVANT qu'elle arrive au composant.
+// Si le serveur répond 403 "Ce compte a été banni",
+// on déconnecte l'utilisateur automatiquement.
+
+api.interceptors.response.use(
+  // Réponse normale (200, 201...) — on la laisse passer sans rien faire
+  (response) => response,
+
+  // Réponse d'erreur (400, 401, 403, 500...)
+  (error) => {
+    const statut = error.response?.status;
+    const message = error.response?.data?.message;
+
+    // Si le serveur répond 403 avec le message de bannissement
+    // on déconnecte l'utilisateur automatiquement
+    if (statut === 403 && message === 'Ce compte a été banni.') {
+      // On récupère la fonction de déconnexion du store Zustand
+      // sans utiliser le hook (car on est hors d'un composant React)
+      const seDeconnecter = useAuthStore.getState().seDeconnecter;
+      seDeconnecter();
+
+      // On redirige vers la page de connexion
+      // window.location force un vrai rechargement de la page
+      window.location.href = '/login?banni=true';
+
+    }
+
+    // On laisse l'erreur se propager normalement pour les autres cas
+    return Promise.reject(error);
+  }
+);
 
 export default api;

@@ -4,6 +4,7 @@
 // Il ne contient AUCUNE logique métier — juste la navigation.
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import NotFound from './pages/NotFound';
 
 // On importe toutes nos pages
 import Home from './pages/Home';
@@ -38,6 +39,10 @@ function App() {
 
         {/* Page admin — réservée aux administrateurs */}
         <Route path="/admin" element={<Admin />} />
+
+        {/* Route attrape-tout — doit toujours être EN DERNIER */}
+        {/* Si aucune route au-dessus ne correspond, on affiche le 404 */}
+        <Route path="*" element={<NotFound />} />
 
       </Routes>
     </BrowserRouter>

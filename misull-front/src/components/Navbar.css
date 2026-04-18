@@ -1,0 +1,175 @@
+/* ============================================
+   Navbar.css — Barre de navigation principale
+   Responsive : hamburger sur mobile
+   ============================================ */
+
+.navbar {
+  background-color: var(--couleur-marron);
+  color: var(--couleur-creme);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  /* Sur desktop : logo a gauche, liens a droite sur une ligne */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Ligne du haut : logo a gauche, hamburger a droite */
+.navbar-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 30px;
+}
+
+/* Logo */
+.navbar-logo {
+  color: var(--couleur-creme);
+  text-decoration: none;
+  font-family: var(--police-titre);
+  font-weight: bold;
+  font-size: 1.4rem;
+  letter-spacing: 1px;
+  transition: opacity 0.2s;
+}
+
+.navbar-logo:hover {
+  opacity: 0.85;
+}
+
+/* ── DESKTOP : liens en ligne a droite ── */
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 30px; /* Meme hauteur que navbar-top */
+}
+
+.navbar-link {
+  color: var(--couleur-creme);
+  text-decoration: none;
+  font-size: 1rem;
+  position: relative;
+  transition: opacity 0.2s;
+}
+
+.navbar-link:hover {
+  opacity: 0.75;
+}
+
+.navbar-link-admin {
+  color: #f0a500;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: opacity 0.2s;
+}
+
+.navbar-link-admin:hover {
+  opacity: 0.75;
+}
+
+.navbar-badge {
+  background-color: var(--couleur-rouge);
+  color: white;
+  border-radius: 50%;
+  padding: 2px 7px;
+  font-size: 0.75rem;
+  margin-left: 5px;
+}
+
+.navbar-bouton-deconnexion {
+  background-color: transparent;
+  border: 1px solid var(--couleur-creme);
+  color: var(--couleur-creme);
+  padding: 6px 14px;
+  border-radius: var(--rayon-sm);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.navbar-bouton-deconnexion:hover {
+  background-color: var(--couleur-creme);
+  color: var(--couleur-marron);
+}
+
+/* ── HAMBURGER : cache sur desktop ── */
+.navbar-hamburger {
+  display: none; /* Cache sur desktop */
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* Les 3 traits du hamburger */
+.hamburger-trait {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background-color: var(--couleur-creme);
+  border-radius: 2px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* ============================================
+   RESPONSIVE — Mobile (moins de 600px)
+   ============================================ */
+@media (max-width: 600px) {
+
+  /* Sur mobile, la navbar repasse en colonne */
+  .navbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .navbar-top {
+    padding: 12px 16px;
+  }
+
+  /* On affiche le bouton hamburger */
+  .navbar-hamburger {
+    display: flex;
+  }
+
+  /* Les liens sont caches par defaut sur mobile */
+  .navbar-links {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding: 0;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* Quand menuOuvert = true, la classe "visible" est ajoutee */
+  .navbar-links.visible {
+    display: flex;
+  }
+
+  /* Chaque lien prend toute la largeur sur mobile */
+  .navbar-link,
+  .navbar-link-admin {
+    display: block;
+    width: 100%;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 1rem;
+  }
+
+  /* Le bouton deconnexion aussi */
+  .navbar-bouton-deconnexion {
+    width: 100%;
+    text-align: left;
+    padding: 14px 16px;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    border-radius: 0;
+    font-size: 1rem;
+  }
+}

@@ -35,17 +35,17 @@ app.use(express.json());
 
 // Limiteur général : max 100 requêtes par IP toutes les 15 minutes
 // Protège toute l'API contre les abus
+// Limiteur général : max 300 requêtes par IP toutes les 15 minutes
 const limiterGeneral = rateLimit({
-  windowMs: 15 * 60 * 1000, // Fenêtre de 15 minutes en millisecondes
-  max: 500,                  // Maximum 100 requêtes par IP dans cette fenêtre
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 300 : 500,
   message: { message: 'Trop de requêtes, réessaie dans 15 minutes.' }
 });
 
 // Limiteur strict pour l'authentification : max 10 tentatives par 15 minutes
-// Empêche quelqu'un d'essayer des milliers de mots de passe (force brute)
 const limiterAuth = rateLimit({
-  windowMs: 15 * 60 * 1000, // Même fenêtre de 15 minutes
-  max: 50,                   // Mais seulement 10 tentatives de connexion/inscription
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 10 : 50,
   message: { message: 'Trop de tentatives, réessaie dans 15 minutes.' }
 });
 

@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import useAuthStore from '../store/useAuthStore';
 import '../App.css';
+import Chargement from '../components/Chargement';
+
 
 function Profil() {
   const { utilisateur } = useAuthStore();
@@ -53,12 +55,16 @@ function Profil() {
   // ─────────────────────────────────────────────
   // Règle : 5 points = 1 tiramisu gratuit
   // On calcule la progression dans le cycle actuel (0 à 5)
-  const calculerJauge = (points) => {
-    const pointsDansCycle = points % 5; // ex: 7 points → 2 dans le cycle actuel
-    const tiramisusGratuits = Math.floor(points / 5); // ex: 7 points → 1 gratuit
-    const pourcentage = (pointsDansCycle / 5) * 100;
-    return { pointsDansCycle, tiramisusGratuits, pourcentage };
-  };
+const calculerJauge = (points) => {
+  const tiramisusGratuits = Math.floor(points / 5);
+  
+  // Si les points sont un multiple exact de 5,
+  // on affiche 5/5 plutot que 0/5
+  const pointsDansCycle = points % 5 === 0 && points > 0 ? 5 : points % 5;
+  
+  const pourcentage = (pointsDansCycle / 5) * 100;
+  return { pointsDansCycle, tiramisusGratuits, pourcentage };
+};
 
   // ─────────────────────────────────────────────
   // FORMATER LA DATE
@@ -87,7 +93,8 @@ function Profil() {
     return couleurs[statut] || '#888';
   };
 
-  if (chargement) return <div className="loading">Chargement du profil...</div>;
+  if (chargement) return <Chargement texte="Chargement du profil..." />;
+
 
   const { pointsDansCycle, tiramisusGratuits, pourcentage } = calculerJauge(profil?.pointsFidelite || 0);
 
@@ -121,7 +128,13 @@ function Profil() {
                 marginBottom: '8px'
               }}>
                 <span>{pointsDansCycle} / 5 tiramisus</span>
-                <span>Prochain gratuit dans {5 - pointsDansCycle} commande{5 - pointsDansCycle > 1 ? 's' : ''}</span>
+                <span style={{ marginLeft: '8px' }}>
+                  {pointsDansCycle === 5
+                    ? 'Tiramisu gratuit disponible !'
+                    : `Prochain gratuit dans ${5 - pointsDansCycle} commande${5 - pointsDansCycle > 1 ? 's' : ''}`
+                  }
+                </span>
+
               </div>
 
               {/* Barre de progression */}
@@ -182,7 +195,7 @@ function Profil() {
               ))}
             </div>
             <p style={{ fontSize: '0.8rem', color: '#999', marginTop: '10px' }}>
-              5 tiramisus achetés = 1 offert 🎁
+              5 tiramisus achetés = 1 Petite tiramisu (3,5€) offerte 🎁
             </p>
           </div>
         </section>
