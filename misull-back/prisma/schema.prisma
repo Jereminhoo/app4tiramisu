@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider   = "prisma-client-js"
   engineType = "library"
@@ -10,7 +8,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Utilisateur {
@@ -28,22 +25,28 @@ model Tiramisu {
   nom              String
   description      String?
   listeIngredients String
-  // Le prix n'est plus ici car il dépend de la taille
   lignesCommande   LigneCommande[]
 }
 
 model Taille {
   id_taille      Int             @id @default(autoincrement())
-  nom            String          // ex: "Petite 450ml"
-  prix           Float           // ex: 3.5
+  nom            String
+  prix           Float
   lignesCommande LigneCommande[]
 }
 
 model Supplement {
   id_supplement  Int             @id @default(autoincrement())
-  nom            String          // ex: "Kinder Bueno"
+  nom            String
   prix           Float           @default(0.80)
   lignesCommande LigneCommande[] @relation("LigneToSupplement")
+}
+
+// Les 3 goûts disponibles : Oreo, Spéculoos, Petit Beurre
+model Gout {
+  id_gout        Int             @id @default(autoincrement())
+  nom            String
+  lignesCommande LigneCommande[]
 }
 
 model Commande {
@@ -57,16 +60,16 @@ model Commande {
 }
 
 model LigneCommande {
-  id_ligne     Int          @id @default(autoincrement())
+  id_ligne     Int        @id @default(autoincrement())
   id_commande  Int
   id_tiramisu  Int
   id_taille    Int
-  quantite     Int          @default(1)
-  
-  commande     Commande     @relation(fields: [id_commande], references: [id_commande])
-  tiramisu     Tiramisu     @relation(fields: [id_tiramisu], references: [id_tiramisu])
-  taille       Taille       @relation(fields: [id_taille], references: [id_taille])
-  
-  // Une ligne peut avoir plusieurs suppléments (ex: Nutella + M&M's)
+  id_gout      Int        // Le goût choisi par le client
+  quantite     Int        @default(1)
+
+  commande     Commande   @relation(fields: [id_commande], references: [id_commande])
+  tiramisu     Tiramisu   @relation(fields: [id_tiramisu], references: [id_tiramisu])
+  taille       Taille     @relation(fields: [id_taille], references: [id_taille])
+  gout         Gout       @relation(fields: [id_gout], references: [id_gout])
   supplements  Supplement[] @relation("LigneToSupplement")
 }

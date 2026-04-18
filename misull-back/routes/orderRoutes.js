@@ -8,4 +8,14 @@ const verifierToken = require('../middlewares/auth'); // On importe le middlewar
 // Express les exécute dans l'ordre : vérifie le token → si ok → crée la commande
 router.post('/create', verifierToken, orderController.createOrder);
 
+// Voir son historique de commandes
+router.get('/historique', verifierToken, orderController.getHistorique);
+
+// Annuler une commande — token requis
+// :id est un paramètre dynamique dans l'URL (ex: /api/orders/5/annuler)
+router.put('/:id/annuler', verifierToken, orderController.annulerCommande);
+
+// Récupère le statut d'une commande spécifique
+router.get('/:id/statut', verifierToken, orderController.getStatut);
+
 module.exports = router;

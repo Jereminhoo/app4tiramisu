@@ -25,7 +25,24 @@ const getUserByPseudo = async (pseudo) => {
   });
 };
 
+// Récupère le profil complet d'un utilisateur (sans son mot de passe !)
+const getProfil = async (id_utilisateur) => {
+  return await prisma.utilisateur.findUnique({
+    where: { id_utilisateur },
+    // On sélectionne uniquement les champs utiles
+    // On ne renvoie JAMAIS le motDePasse au frontend
+    select: {
+      id_utilisateur: true,
+      pseudo: true,
+      role: true,
+      pointsFidelite: true,
+      estBanni: true,
+    }
+  });
+};
+
 module.exports = {
   createUser,
-  getUserByPseudo
+  getUserByPseudo,
+  getProfil
 };

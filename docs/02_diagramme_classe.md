@@ -27,6 +27,11 @@ classDiagram
         +float prix
     }
 
+    class Gout {
+        +int id_gout
+        +String nom
+    }
+
     class Commande {
         +int id_commande
         +int id_utilisateur
@@ -40,6 +45,7 @@ classDiagram
         +int id_commande
         +int id_tiramisu
         +int id_taille
+        +int id_gout
         +int quantite
     }
 
@@ -47,4 +53,5 @@ classDiagram
     Commande "1" *-- "1..*" LigneCommande : contient
     LigneCommande "*" -- "1" Tiramisu : correspond à
     LigneCommande "*" -- "1" Taille : a pour format
+    LigneCommande "*" -- "1" Gout : a pour goût
     LigneCommande "*" -- "*" Supplement : inclut

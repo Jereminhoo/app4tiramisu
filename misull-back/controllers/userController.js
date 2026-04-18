@@ -69,7 +69,8 @@ const login = async (req, res) => {
     const token = jwt.sign(
       { 
         id: user.id_utilisateur,  // L'id de l'utilisateur
-        role: user.role            // Son rôle (CLIENT ou ADMIN)
+        role: user.role,            // Son rôle (CLIENT ou ADMIN)
+        pseudo: user.pseudo 
       },
       process.env.JWT_SECRET,     // La clé secrète dans ton .env
       { expiresIn: '24h' }        // Le token expire après 24 heures
@@ -92,7 +93,19 @@ const login = async (req, res) => {
   }
 };
 
+// Renvoie le profil de l'utilisateur connecté
+const getProfil = async (req, res) => {
+  try {
+    // L'id vient du token JWT, pas de l'URL — sécurisé !
+    const profil = await userService.getProfil(req.utilisateur.id);
+    res.json({ profil });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur lors de la récupération du profil." });
+  }
+};
+
 module.exports = {
   register,
-  login
+  login, 
+  getProfil
 };

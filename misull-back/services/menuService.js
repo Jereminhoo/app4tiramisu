@@ -18,10 +18,14 @@ const getSupplements = async () => {
   return await prisma.supplement.findMany();
 };
 
-// 4. L'EXPORT : On rend ces fonctions utilisables ailleurs
-// On exporte les 3 fonctions pour que ton fichier menuController.js puisse les appeler
+// Récupère tous les goûts disponibles
+const getGouts = async () => {
+  return await prisma.gout.findMany();
+};
+
 module.exports = {
   getTiramisus,
   getTailles,
-  getSupplements
+  getSupplements,
+  getGouts 
 };

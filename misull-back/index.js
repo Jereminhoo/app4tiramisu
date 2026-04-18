@@ -37,7 +37,7 @@ app.use(express.json());
 // Protège toute l'API contre les abus
 const limiterGeneral = rateLimit({
   windowMs: 15 * 60 * 1000, // Fenêtre de 15 minutes en millisecondes
-  max: 100,                  // Maximum 100 requêtes par IP dans cette fenêtre
+  max: 500,                  // Maximum 100 requêtes par IP dans cette fenêtre
   message: { message: 'Trop de requêtes, réessaie dans 15 minutes.' }
 });
 
@@ -45,7 +45,7 @@ const limiterGeneral = rateLimit({
 // Empêche quelqu'un d'essayer des milliers de mots de passe (force brute)
 const limiterAuth = rateLimit({
   windowMs: 15 * 60 * 1000, // Même fenêtre de 15 minutes
-  max: 10,                   // Mais seulement 10 tentatives de connexion/inscription
+  max: 50,                   // Mais seulement 10 tentatives de connexion/inscription
   message: { message: 'Trop de tentatives, réessaie dans 15 minutes.' }
 });
 
@@ -64,6 +64,9 @@ app.use('/api/users', limiterAuth, require('./routes/userRoutes'));
 
 // Routes commandes (protégées - le middleware verifierToken est dans orderRoutes.js)
 app.use('/api/orders', require('./routes/orderRoutes'));
+
+// Routes admin (protégées — token + rôle ADMIN requis)
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 // ─────────────────────────────────────────────
 // PAGE D'ACCUEIL

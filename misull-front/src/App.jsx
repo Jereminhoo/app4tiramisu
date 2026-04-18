@@ -1,95 +1,47 @@
-import { useState, useEffect } from 'react'
-import './App.css' 
+// src/App.jsx
+// Ce fichier est le "chef d'orchestre" du frontend.
+// Son seul rôle : définir quelles pages s'affichent selon l'URL.
+// Il ne contient AUCUNE logique métier — juste la navigation.
+
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
+// On importe toutes nos pages
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Commande from './pages/Commande';
+import Checkout from './pages/Checkout';
+import Profil from './pages/Profil';
+import Admin from './pages/Admin';
+
+// On importe la barre de navigation
+import Navbar from './components/Navbar';
 
 function App() {
-  const [menu, setMenu] = useState(null)
-
-  useEffect(() => {
-    fetch('http://localhost:3000/api/menu')
-      .then(reponse => reponse.json())
-      .then(donnees => setMenu(donnees))
-      .catch(erreur => console.error("Erreur avec l'API :", erreur))
-  }, [])
-
-  if (!menu) return <div className="loading">Chargement de la carte...</div>
-
   return (
-    <div className="app-container">
-      
-      <header className="header">
-        <img src="/logo.jpg" alt="Logo Misull" className="logo" />
-        <p className="subtitle">Tiramisus et Tira-crêpes fait maison</p>
-      </header>
+    // BrowserRouter active le système de navigation par URL
+    <BrowserRouter>
 
-      <div className="welcome-banner">
-        <img src="/welcome.jpg" alt="Welcome to Misull" style={{ maxWidth: '100%', borderRadius: '10px' }} />
-      </div>
+      {/* La Navbar est en dehors des Routes → elle s'affiche sur TOUTES les pages */}
+      <Navbar />
 
-      {/* Bannière d'avertissement projet étudiant */}
-      <div style={{ backgroundColor: '#ffe6e6', color: '#cc0000', padding: '15px', textAlign: 'center', borderRadius: '8px', maxWidth: '800px', margin: '0 auto 25px auto', fontWeight: 'bold', border: '1px solid #ffcccc' }}>
-        ⚠️ Ceci est un projet étudiant de simulation. Aucune vraie commande ne sera traitée sur ce site.
-      </div>
+      {/* Routes définit l'ensemble des chemins possibles */}
+      <Routes>
 
-      <main className="main-content">
-        
-        <section className="category-section">
-          <h2 className="category-title">Nos Desserts</h2>
-          <div className="dessert-list">
-            {menu.tiramisus.map((tira) => (
-              <div key={tira.id_tiramisu} className="dessert-card">
-                <h3 className="dessert-name">{tira.nom}</h3>
-                <p className="dessert-desc">{tira.description}</p>
-                <p className="dessert-ingredients">Goûts : {tira.listeIngredients}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Pages publiques — accessibles sans être connecté */}
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/commande" element={<Commande />} />
 
-        <section className="category-section">
-          <h2 className="category-title">Tailles & Prix</h2>
-          <div className="flavors-container">
-            {menu.tailles.map((taille) => (
-              <span key={taille.id_taille} className="price-badge">
-                {taille.nom} : <strong>{taille.prix}€</strong>
-              </span>
-            ))}
-          </div>
-        </section>
+        {/* Pages privées — nécessitent d'être connecté */}
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/profil" element={<Profil />} />
 
-        <section className="category-section">
-          <h2 className="category-title">Garnitures Supplémentaires (0,80€)</h2>
-          <p className="optionnel-text">OPTIONNEL : Vous n'êtes pas obligé d'en prendre !!</p>
-          <div className="flavors-container">
-            {menu.supplements.map((supp) => (
-              <span key={supp.id_supplement} className="supp-badge">
-                {supp.nom}
-              </span>
-            ))}
-          </div>
-        </section>
+        {/* Page admin — réservée aux administrateurs */}
+        <Route path="/admin" element={<Admin />} />
 
-        <section className="info-grid">
-          <div className="info-box">
-            <strong>1. Étudiants</strong>
-            <p>On fait ça avec passion, mais pas de commandes en urgence.</p>
-          </div>
-          <div className="info-box">
-            <strong>2. Allergies</strong>
-            <p>Sans alcool ni café. Contient du lait.</p>
-          </div>
-          <div className="info-box">
-            <strong>3. Livraison</strong>
-            <p>Retrait gratuit / Livraison +2€.</p>
-          </div>
-          <div className="info-box">
-            <strong>4. Paiement</strong>
-            <p>En espèces si possible.</p>
-          </div>
-        </section>
-
-      </main>
-    </div>
-  )
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
