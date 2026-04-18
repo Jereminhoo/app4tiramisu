@@ -167,5 +167,3 @@ node_modules
 .env
 
 /generated/prisma
-
-!node_modules/.prisma/
