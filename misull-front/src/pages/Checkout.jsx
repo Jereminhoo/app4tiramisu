@@ -180,6 +180,18 @@ function Checkout() {
             <p style={{ color: '#666' }}>
               Numéro de commande : <strong>#{commandeValidee.id_commande}</strong>
             </p>
+            {/* Code de retrait bien visible pour que le client le donne au retrait */}
+            <div style={styles.codeRetrait}>
+              <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#666' }}>
+                Ton code de retrait :
+              </p>
+              <span style={styles.codeRetraitValeur}>
+                {commandeValidee.codeRetrait}
+              </span>
+              <p style={{ margin: '5px 0 0 0', fontSize: '0.8rem', color: '#888' }}>
+                Donne ce code quand tu viens chercher ta commande.
+              </p>
+            </div>
           </div>
 
           {/* Bug 17 : message pour voir l'avancement */}
@@ -587,6 +599,21 @@ const styles = {
     fontSize: '1rem',
     marginTop: '10px',
   },
+  codeRetrait: {
+  backgroundColor: '#faf7f2',
+  border: '2px solid #c8b49c',
+  borderRadius: '12px',
+  padding: '15px 25px',
+  textAlign: 'center',
+  width: '100%',
+  boxSizing: 'border-box',
+},
+codeRetraitValeur: {
+  fontSize: '2.5rem',
+  fontWeight: 'bold',
+  color: '#c0392b',
+  letterSpacing: '8px', // Espacement pour que le code soit facile à lire
+},
 };
 
 export default Checkout;

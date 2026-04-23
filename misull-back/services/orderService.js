@@ -2,44 +2,6 @@
 const prisma = require('../prisma/client');
 const telegramService = require('./telegramService');
 
-// Crée une commande avec date de retrait et option livraison
-const createOrder = async (id_utilisateur, prixTotal, lignes, dateRetrait, livraisonSamedi) => {
-  return await prisma.$transaction(async (tx) => {
-    const nouvelleCommande = await tx.commande.create({
-      data: {
-        id_utilisateur,
-        prixTotal,
-        // On convertit la date en objet Date si elle est fournie
-        dateRetrait: dateRetrait ? new Date(dateRetrait) : null,
-        // false par défaut si non fourni
-        livraisonSamedi: livraisonSamedi || false,
-        lignes: {
-          create: lignes.map((ligne) => ({
-            id_tiramisu: ligne.id_tiramisu,
-            id_taille: ligne.id_taille,
-            id_gout: ligne.id_gout,
-            quantite: ligne.quantite,
-            supplements: {
-              connect: ligne.supplements.map((id_supp) => ({ id_supplement: id_supp }))
-            }
-          }))
-        }
-      },
-      include: {
-        lignes: {
-          include: {
-            supplements: true,
-            tiramisu: true,
-            taille: true,
-            gout: true,
-          }
-        }
-      }
-    });
-    return nouvelleCommande;
-  });
-};
-
 const getHistorique = async (id_utilisateur) => {
   return await prisma.commande.findMany({
     where: { id_utilisateur },
@@ -96,4 +58,67 @@ const getStatut = async (id_commande, id_utilisateur) => {
   return commande;
 };
 
-module.exports = { createOrder, getHistorique, annulerCommande, getStatut };
+// Génère un code de retrait unique de 6 caractères
+// Ex: "A3F9K2" — facile à lire et à dicter à voix haute
+const genererCodeRetrait = () => {
+  // On utilise uniquement des lettres et chiffres faciles à lire
+  // On évite 0/O et 1/I qui se ressemblent trop
+  const caracteres = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    // Math.random() donne un nombre entre 0 et 1
+    // On multiplie par la longueur pour avoir un index aléatoire
+    code += caracteres[Math.floor(Math.random() * caracteres.length)];
+  }
+  return code;
+};
+
+// Crée une commande avec date de retrait et option livraison
+const createOrder = async (id_utilisateur, prixTotal, lignes, dateRetrait, livraisonSamedi) => {
+  return await prisma.$transaction(async (tx) => {
+
+    // On génère un code unique — on réessaie si collision (très rare)
+    let codeRetrait;
+    let codeUnique = false;
+    while (!codeUnique) {
+      codeRetrait = genererCodeRetrait();
+      // On vérifie que le code n'existe pas déjà en BDD
+      const existant = await tx.commande.findUnique({ where: { codeRetrait } });
+      if (!existant) codeUnique = true;
+    }
+
+    const nouvelleCommande = await tx.commande.create({
+      data: {
+        id_utilisateur,
+        prixTotal,
+        dateRetrait: dateRetrait ? new Date(dateRetrait) : null,
+        livraisonSamedi: livraisonSamedi || false,
+        codeRetrait, // Code unique généré automatiquement
+        lignes: {
+          create: lignes.map((ligne) => ({
+            id_tiramisu: ligne.id_tiramisu,
+            id_taille: ligne.id_taille,
+            id_gout: ligne.id_gout,
+            quantite: ligne.quantite,
+            supplements: {
+              connect: ligne.supplements.map((id_supp) => ({ id_supplement: id_supp }))
+            }
+          }))
+        }
+      },
+      include: {
+        lignes: {
+          include: {
+            supplements: true,
+            tiramisu: true,
+            taille: true,
+            gout: true,
+          }
+        }
+      }
+    });
+    return nouvelleCommande;
+  });
+};
+
+module.exports = { createOrder, getHistorique, annulerCommande, getStatut, genererCodeRetrait };

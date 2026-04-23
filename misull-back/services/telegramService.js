@@ -34,9 +34,11 @@ const envoyerNotification = async (commande, pseudo) => {
 
 👤 Client : ${pseudo}
 📦 Commande #${commande.id_commande}
+🔑 Code de retrait : ${commande.codeRetrait}
 💰 Total : ${commande.prixTotal} €
 📅 Retrait souhaité : ${formaterDate(commande.dateRetrait)}
 🚗 Livraison samedi : ${commande.livraisonSamedi ? 'Oui (+2,50 €)' : 'Non'}
+
 
 🛒 Détail :
 ${detailLignes}
