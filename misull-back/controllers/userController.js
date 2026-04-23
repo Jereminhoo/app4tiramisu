@@ -1,36 +1,67 @@
 // controllers/userController.js
+// Gère l'inscription, la connexion et le profil utilisateur.
+
 const userService = require('../services/userService');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken'); // On importe l'outil JWT
+const jwt = require('jsonwebtoken');
 
+// ─────────────────────────────────────────
+// INSCRIPTION
+// ─────────────────────────────────────────
 const register = async (req, res) => {
   try {
     const { pseudo, motDePasse } = req.body;
 
-    const pseudoRegex = /^(?=.*[A-Z])\S{3,}$/;
+    // Pseudo : minimum 3 caractères, pas d'espace
+    // On a supprimé l'obligation d'avoir une majuscule, c'était trop strict
+    const pseudoRegex = /^\S{3,}$/;
     if (!pseudoRegex.test(pseudo)) {
-      return res.status(400).json({ 
-        message: "Pseudo invalide : 3 caractères min, une majuscule et aucun espace." 
+      return res.status(400).json({
+        message: "Pseudo invalide : 3 caractères minimum, sans espace."
       });
     }
 
-    const mdpRegex = /^(?=.*[a-zA-Z])(?=.*[!@#$%^&*(),.?":{}|<>])\S{8,}$/;
+    // Mot de passe : minimum 6 caractères, pas d'espace
+    // On a supprimé l'obligation du caractère spécial, c'était trop strict
+    const mdpRegex = /^\S{6,}$/;
     if (!mdpRegex.test(motDePasse)) {
-      return res.status(400).json({ 
-        message: "Mot de passe trop faible : 8 caractères min, une lettre, un caractère spécial et aucun espace." 
+      return res.status(400).json({
+        message: "Mot de passe invalide : 6 caractères minimum, sans espace."
       });
     }
 
+    // Vérifier si le pseudo est déjà pris
     const existingUser = await userService.getUserByPseudo(pseudo);
     if (existingUser) {
       return res.status(400).json({ message: "Ce pseudo est déjà pris." });
     }
 
+    // Créer l'utilisateur en base de données
     const newUser = await userService.createUser(pseudo, motDePasse);
-    
-    res.status(201).json({ 
+
+    // ─── AUTO-CONNEXION ───
+    // On génère directement un JWT après l'inscription
+    // Comme ça, le frontend peut connecter l'utilisateur sans qu'il
+    // doive retaper son pseudo et mot de passe
+    const token = jwt.sign(
+      {
+        id: newUser.id_utilisateur,
+        role: newUser.role,
+        pseudo: newUser.pseudo
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // On renvoie le token ET les infos user, exactement comme /login
+    res.status(201).json({
       message: "Compte créé avec succès !",
-      user: { id: newUser.id_utilisateur, pseudo: newUser.pseudo }
+      token: token,
+      user: {
+        id: newUser.id_utilisateur,
+        pseudo: newUser.pseudo,
+        role: newUser.role
+      }
     });
 
   } catch (error) {
@@ -39,6 +70,9 @@ const register = async (req, res) => {
   }
 };
 
+// ─────────────────────────────────────────
+// CONNEXION
+// ─────────────────────────────────────────
 const login = async (req, res) => {
   try {
     const { pseudo, motDePasse } = req.body;
@@ -49,8 +83,7 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Pseudo ou mot de passe incorrect." });
     }
 
-    // 2. Compte banni ?
-    // On bloque avant même de vérifier le mot de passe
+    // 2. Compte banni ? On bloque avant même de vérifier le mot de passe
     if (user.estBanni) {
       return res.status(403).json({ message: "Ce compte a été banni." });
     }
@@ -61,25 +94,25 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Pseudo ou mot de passe incorrect." });
     }
 
-    // 4. On génère le JWT
+    // 4. Générer le JWT
     // jwt.sign() prend 3 arguments :
     // - Le payload : les infos qu'on veut stocker dans le token
     // - Le secret : la clé secrète du .env pour signer le token
-    // - Les options : ici "expiresIn" fait expirer le token après 24h
+    // - Les options : "expiresIn" fait expirer le token après 24h
     const token = jwt.sign(
-      { 
-        id: user.id_utilisateur,  // L'id de l'utilisateur
-        role: user.role,            // Son rôle (CLIENT ou ADMIN)
-        pseudo: user.pseudo 
+      {
+        id: user.id_utilisateur,
+        role: user.role,
+        pseudo: user.pseudo
       },
-      process.env.JWT_SECRET,     // La clé secrète dans ton .env
-      { expiresIn: '24h' }        // Le token expire après 24 heures
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
     );
 
-    // 5. On renvoie le token au frontend
+    // 5. Renvoyer le token au frontend
     res.json({
       message: "Connexion réussie !",
-      token: token, // Le frontend va stocker ce token
+      token: token,
       user: {
         id: user.id_utilisateur,
         pseudo: user.pseudo,
@@ -93,10 +126,13 @@ const login = async (req, res) => {
   }
 };
 
-// Renvoie le profil de l'utilisateur connecté
+// ─────────────────────────────────────────
+// PROFIL
+// ─────────────────────────────────────────
+// Renvoie le profil de l'utilisateur connecté.
+// L'id vient du token JWT, pas de l'URL — sécurisé !
 const getProfil = async (req, res) => {
   try {
-    // L'id vient du token JWT, pas de l'URL — sécurisé !
     const profil = await userService.getProfil(req.utilisateur.id);
     res.json({ profil });
   } catch (error) {
@@ -106,6 +142,6 @@ const getProfil = async (req, res) => {
 
 module.exports = {
   register,
-  login, 
+  login,
   getProfil
 };
