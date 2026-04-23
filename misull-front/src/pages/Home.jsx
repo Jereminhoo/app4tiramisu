@@ -1,64 +1,68 @@
 // src/pages/Home.jsx
 // Page d'accueil publique — visible par tout le monde.
-// Elle affiche le menu, les prix, les suppléments et les infos importantes.
+// Affiche le menu, les prix, les suppléments et les infos importantes.
+// Optimisée pour être "scannable" rapidement sur mobile.
 
 import { useEffect, useState } from 'react';
-import api from '../api/axios'; // On utilise notre instance Axios centralisée
-import '../App.css'; // Import du CSS global
+import { useNavigate } from 'react-router-dom';
+import api from '../api/axios';
+import useAuthStore from '../store/useAuthStore';
 import Chargement from '../components/Chargement';
-
+import '../App.css';
 
 function Home() {
-  // État local pour stocker les données du menu venant de l'API
   const [menu, setMenu] = useState(null);
+  const navigate = useNavigate();
 
-  // useEffect se lance une seule fois au chargement de la page (le [] à la fin)
+  // On récupère l'état de connexion depuis le store Zustand
+  const utilisateur = useAuthStore(state => state.utilisateur);
+
   useEffect(() => {
-    // On appelle notre API Express pour récupérer le menu complet
     api.get('/api/menu')
       .then(reponse => setMenu(reponse.data))
       .catch(erreur => console.error("Erreur chargement menu :", erreur));
   }, []);
 
-  // Tant que le menu n'est pas chargé, on affiche un message
   if (!menu) return <Chargement texte="Chargement de la carte..." />;
 
+  // Si connecté → /commande, sinon → /login
+  const handleCommander = () => {
+    if (utilisateur) {
+      navigate('/commande');
+    } else {
+      navigate('/login');
+    }
+  };
 
   return (
     <div className="app-container">
 
-      {/* En-tête avec logo */}
+      {/* ── EN-TÊTE ── */}
       <header className="header">
         <img src="/logo.jpg" alt="Logo Misull" className="logo" />
         <p className="subtitle">Tiramisus et Tira-crêpes fait maison</p>
+        <p style={styles.ville}>La Louvière</p>
       </header>
 
-      {/* Image de bienvenue */}
+      {/* ── IMAGE DE BIENVENUE ── */}
       <div className="welcome-banner">
-        <img
-          src="/welcome.jpg"
-          alt="Welcome to Misull"
-        />
+        <img src="/welcome.jpg" alt="Welcome to Misull" />
       </div>
 
-      {/* Bannière d'avertissement projet étudiant */}
-      <div style={{
-        backgroundColor: '#ffe6e6',
-        color: '#cc0000',
-        padding: '15px',
-        textAlign: 'center',
-        borderRadius: '8px',
-        maxWidth: '800px',
-        margin: '0 auto 25px auto',
-        fontWeight: 'bold',
-        border: '1px solid #ffcccc'
-      }}>
-        ⚠️ Ceci est un projet étudiant de simulation. Aucune vraie commande ne sera traitée.
+      {/* ── BANNIÈRE PROJET ÉTUDIANT ── */}
+      <div style={styles.banniereEtudiant}>
+        Projet étudiant
+      </div>
+
+      <div style={styles.ctaSection}>
+        <button onClick={handleCommander} style={styles.boutonCommander}>
+          Commander maintenant
+        </button>
       </div>
 
       <main className="main-content">
 
-        {/* Section desserts */}
+        {/* ── NOS DESSERTS ── */}
         <section className="category-section">
           <h2 className="category-title">Nos Desserts</h2>
           <div className="dessert-list">
@@ -66,28 +70,46 @@ function Home() {
               <div key={tira.id_tiramisu} className="dessert-card">
                 <h3 className="dessert-name">{tira.nom}</h3>
                 <p className="dessert-desc">{tira.description}</p>
-                <p className="dessert-ingredients">Ingrédients : {tira.listeIngredients}</p>
+                <p className="dessert-ingredients">
+                  Ingrédients : {tira.listeIngredients}
+                </p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Section tailles et prix */}
+        {/* ── TAILLES ET PRIX ──
+            Prix en grand pour être vus immédiatement. */}
         <section className="category-section">
-          <h2 className="category-title">Tailles / Prix</h2>
-          <div className="flavors-container">
+          <h2 className="category-title">Tailles et Prix</h2>
+          <div style={styles.prixGrid}>
             {menu.tailles.map((taille) => (
-              <span key={taille.id_taille} className="price-badge">
-                {taille.nom} : <strong>{taille.prix}€</strong>
+              <div key={taille.id_taille} style={styles.prixCard}>
+                <p style={styles.prixNom}>{taille.nom}</p>
+                <p style={styles.prixMontant}>{taille.prix} €</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── GOÛTS DISPONIBLES ── */}
+        <section className="category-section">
+          <h2 className="category-title">Goûts disponibles</h2>
+          <div className="flavors-container">
+            {menu.gouts.map((gout) => (
+              <span key={gout.id_gout} className="supp-badge">
+                {gout.nom}
               </span>
             ))}
           </div>
         </section>
 
-        {/* Section suppléments */}
+        {/* ── GARNITURES SUPPLÉMENTAIRES ── */}
         <section className="category-section">
-          <h2 className="category-title">Garnitures Supplémentaires (0,80€)</h2>
-          <p className="optionnel-text">OPTIONNEL : Vous n'êtes pas obligé d'en prendre !</p>
+          <h2 className="category-title">Garnitures Supplémentaires</h2>
+          <p style={styles.optionnel}>
+            OPTIONNEL : +1 € par garniture, vous pouvez en prendre plusieurs !
+          </p>
           <div className="flavors-container">
             {menu.supplements.map((supp) => (
               <span key={supp.id_supplement} className="supp-badge">
@@ -97,41 +119,166 @@ function Home() {
           </div>
         </section>
 
-        {/* Section infos importantes */}
-        <section className="info-grid">
-          <div className="info-box">
-            <strong>1. Étudiants</strong>
-            <p>On fait ça avec passion, mais pas de commandes en urgence.</p>
-          </div>
-          <div className="info-box">
-            <strong>2. Allergies</strong>
-            <p>Sans alcool ni café. Contient du lait.</p>
-          </div>
-          <div className="info-box">
-            <strong>3. Livraison</strong>
-            <p>Retrait gratuit / Livraison +2€, uniquement le samedi</p>
-          </div>
-          <div className="info-box">
-            <strong>4. Paiement</strong>
-            <p>En espèces si possible.</p>
+        {/* ── INFOS IMPORTANTES ── */}
+        <section className="category-section">
+          <h2 className="category-title">Infos importantes</h2>
+          <div className="info-grid">
+            <div className="info-box">
+              <strong>Délai minimum</strong>
+              <p>On est étudiants ! Prévoir au moins 1 jour après la commande.</p>
+            </div>
+            <div className="info-box">
+              <strong>Allergies</strong>
+              <p>Sans alcool ni café. Contient du lait.</p>
+            </div>
+            <div className="info-box">
+              <strong>Livraison</strong>
+              <p>Retrait gratuit. Livraison le samedi : +2,50 €.</p>
+            </div>
+            <div className="info-box">
+              <strong>Paiement</strong>
+              <p>En espèces si possible.</p>
+            </div>
           </div>
         </section>
 
+        {/* ── LIEN INSTAGRAM ── */}
+        <section style={styles.instaSection}>
+          <p style={styles.instaTexte}>
+            Envie de voir plus de photos et vidéos ?
+          </p>
+          <a
+            href="https://www.instagram.com/misulalouviere"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={styles.instaLien}
+          >
+            Suivre @misulalouviere sur Instagram
+          </a>
+        </section>
+
       </main>
-      {/* Version — discrète, en bas à droite */}
-      <p style={{
-        position: 'fixed',      /* Reste visible même en scrollant */
-        bottom: '10px',
-        right: '12px',
-        fontSize: '0.7rem',
-        color: '#c8b49c',       /* Couleur marron clair, très discret */
-        margin: 0,
-        userSelect: 'none',     /* On peut pas la sélectionner au clic */
-      }}>
-        v4.0.0
-      </p>
+
+      {/* ── VERSION ── discrète, fixe en bas à droite */}
+      <p style={styles.version}>v4.0.0</p>
+
     </div>
   );
 }
+
+// ─────────────────────────────────────────
+// STYLES
+// ─────────────────────────────────────────
+const styles = {
+  ville: {
+    fontSize: '0.9rem',
+    color: '#888',
+    margin: '4px 0 0 0',
+  },
+  banniereEtudiant: {
+    backgroundColor: '#ffe6e6',
+    color: '#cc0000',
+    padding: '12px 20px',
+    textAlign: 'center',
+    borderRadius: '8px',
+    maxWidth: '800px',
+    margin: '0 auto 20px auto',
+    fontWeight: 'bold',
+    border: '1px solid #ffcccc',
+    fontSize: '0.9rem',
+  },
+  ctaSection: {
+    textAlign: 'center',
+    margin: '0 auto 30px auto',
+    maxWidth: '800px',
+    padding: '0 20px',
+  },
+  boutonCommander: {
+    backgroundColor: '#c0392b',
+    color: 'white',
+    border: 'none',
+    borderRadius: '12px',
+    padding: '16px 40px',
+    fontSize: '1.1rem',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    boxShadow: '0 4px 12px rgba(192, 57, 43, 0.3)',
+  },
+  messageConnexion: {
+    marginTop: '12px',
+    fontSize: '0.9rem',
+    color: '#666',
+  },
+  lienConnexion: {
+    color: '#c0392b',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    textDecoration: 'underline',
+  },
+  prixGrid: {
+    display: 'flex',
+    gap: '15px',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  prixCard: {
+    backgroundColor: '#faf7f2',
+    border: '1px solid #c8b49c',
+    borderRadius: '12px',
+    padding: '20px 30px',
+    textAlign: 'center',
+    minWidth: '140px',
+    flex: '1',
+  },
+  prixNom: {
+    fontSize: '1rem',
+    color: '#3b2f2f',
+    margin: '0 0 8px 0',
+    fontWeight: 'bold',
+  },
+  prixMontant: {
+    fontSize: '1.8rem',
+    color: '#c0392b',
+    fontWeight: 'bold',
+    margin: 0,
+  },
+  optionnel: {
+    fontSize: '0.9rem',
+    color: '#888',
+    textAlign: 'center',
+    marginBottom: '15px',
+    fontStyle: 'italic',
+  },
+  instaSection: {
+    textAlign: 'center',
+    margin: '30px auto 20px auto',
+    padding: '25px',
+    backgroundColor: '#faf7f2',
+    borderRadius: '12px',
+    border: '1px solid #c8b49c',
+    maxWidth: '500px',
+  },
+  instaTexte: {
+    color: '#3b2f2f',
+    marginBottom: '12px',
+    fontSize: '1rem',
+  },
+  instaLien: {
+    color: '#c0392b',
+    fontWeight: 'bold',
+    textDecoration: 'none',
+    fontSize: '1rem',
+    display: 'inline-block',
+  },
+  version: {
+    position: 'fixed',
+    bottom: '10px',
+    right: '12px',
+    fontSize: '0.7rem',
+    color: '#c8b49c',
+    margin: 0,
+    userSelect: 'none',
+  },
+};
 
 export default Home;
