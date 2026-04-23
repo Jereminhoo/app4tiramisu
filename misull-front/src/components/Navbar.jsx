@@ -72,6 +72,10 @@ function Navbar() {
               {utilisateur.pseudo}
             </Link>
 
+            <Link to="/mes-commandes" className="navbar-link" onClick={fermerMenu}>
+              Mes commandes
+            </Link>
+
             {utilisateur.role === 'ADMIN' && (
               <Link to="/admin" className="navbar-link-admin" onClick={fermerMenu}>
                 Admin

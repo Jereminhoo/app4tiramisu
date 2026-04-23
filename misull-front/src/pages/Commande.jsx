@@ -1,4 +1,7 @@
 // src/pages/Commande.jsx
+// Page de commande — permet de choisir un tiramisu, son goût, sa taille,
+// ses garnitures et sa quantité, puis de l'ajouter au panier.
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
@@ -6,40 +9,41 @@ import useAuthStore from '../store/useAuthStore';
 import '../App.css';
 import Chargement from '../components/Chargement';
 
-
 function Commande() {
-
   const [menu, setMenu] = useState(null);
   const [selection, setSelection] = useState({
     tiramisu: null,
-    gout: null,       
+    gout: null,
     taille: null,
     supplements: [],
     quantite: 1,
   });
   const [confirmation, setConfirmation] = useState('');
-  const { ajouterAuPanier, utilisateur, commandeValidee } = useAuthStore();
+  const { ajouterAuPanier, utilisateur, commandeValidee, panier } = useAuthStore();
   const navigate = useNavigate();
 
+  // Retourne l'image selon le nom du tiramisu
   const getImage = (nom) => {
     if (nom.toLowerCase().includes('crêpe')) return '/tira-crepes.jpg';
     return '/tiramisu.jpg';
   };
 
   useEffect(() => {
+    // Si pas connecté, on redirige vers le login
     if (!utilisateur) { navigate('/login'); return; }
 
-    // Si une commande est en cours et en attente, on redirige vers le checkout
-  if (commandeValidee && commandeValidee.statut === 'EN_ATTENTE') {
-    navigate('/checkout');
-    return;
-  }
+    // Si une commande est déjà en cours, on redirige vers le checkout
+    if (commandeValidee && commandeValidee.statut === 'EN_ATTENTE') {
+      navigate('/checkout');
+      return;
+    }
 
     api.get('/api/menu')
       .then(reponse => setMenu(reponse.data))
       .catch(erreur => console.error("Erreur chargement menu :", erreur));
   }, []);
 
+  // ─── HANDLERS DE SÉLECTION ───
   const choisirTiramisu = (tiramisu) => {
     // On réinitialise tout quand on change de tiramisu
     setSelection({ tiramisu, gout: null, taille: null, supplements: [], quantite: 1 });
@@ -64,26 +68,33 @@ function Commande() {
     });
   };
 
+  // ─── CALCUL DU PRIX ───
   const calculerPrix = () => {
     if (!selection.taille) return 0;
     const prixSupplements = selection.supplements.reduce((total, s) => total + s.prix, 0);
     return ((selection.taille.prix + prixSupplements) * selection.quantite).toFixed(2);
   };
 
+  // ─── TOTAL DU PANIER ───
+  // Utilisé pour la barre fixe en bas
+  const calculerTotalPanier = () => {
+    return panier.reduce((total, ligne) => total + ligne.prix, 0).toFixed(2);
+  };
+
+  // ─── AJOUTER AU PANIER ───
   const ajouterAuPanierHandler = () => {
     if (!utilisateur) { navigate('/login'); return; }
 
-    // Le goût est obligatoire
     if (!selection.tiramisu || !selection.gout || !selection.taille) {
-      setConfirmation('⚠️ Choisis un tiramisu, un goût et une taille !');
+      setConfirmation('warning');
       return;
     }
 
     const ligne = {
       id_tiramisu: selection.tiramisu.id_tiramisu,
       nom: selection.tiramisu.nom,
-      id_gout: selection.gout.id_gout,      
-      nomGout: selection.gout.nom,          
+      id_gout: selection.gout.id_gout,
+      nomGout: selection.gout.nom,
       id_taille: selection.taille.id_taille,
       nomTaille: selection.taille.nom,
       prix: parseFloat(calculerPrix()),
@@ -93,42 +104,41 @@ function Commande() {
     };
 
     ajouterAuPanier(ligne);
-    setConfirmation(`✅ ${selection.tiramisu.nom} (${selection.gout.nom}) ajouté au panier !`);
+    setConfirmation('success');
+    // On cache le message après 3 secondes
     setTimeout(() => setConfirmation(''), 3000);
+    // On réinitialise la sélection pour pouvoir recommander
     setSelection({ tiramisu: null, gout: null, taille: null, supplements: [], quantite: 1 });
   };
 
   if (!menu) return <Chargement texte="Chargement de la carte..." />;
 
   return (
-    <div className="app-container">
+    // paddingBottom : espace pour que la barre fixe du bas ne cache pas le contenu
+    <div className="app-container" style={{ paddingBottom: panier.length > 0 ? '90px' : '0' }}>
       <main className="main-content">
 
-        <h1 style={{ textAlign: 'center', fontSize: '1.8rem', marginBottom: '10px' }}>
-          Passe ta commande 🍰
-        </h1>
+        <h1 style={styles.titre}>Passe ta commande</h1>
 
-        <div style={{
-          backgroundColor: '#ffe6e6', color: '#cc0000', padding: '12px',
-          textAlign: 'center', borderRadius: '8px', marginBottom: '25px',
-          fontWeight: 'bold', border: '1px solid #ffcccc'
-        }}>
-          ⚠️ Simulation uniquement - aucune vraie commande ne sera traitée.
+        {/* ── Bug 10 : Message délai minimum 1 jour ── */}
+        <div style={styles.banniereInfo}>
+          Nous sommes étudiants ! Prévois au moins <strong>1 jour</strong> entre
+          ta commande et le retrait. Merci pour ta patience !
         </div>
 
-        {confirmation && (
-          <div style={{
-            backgroundColor: confirmation.includes('⚠️') ? '#ffe6e6' : '#e6ffe6',
-            color: confirmation.includes('⚠️') ? '#cc0000' : '#006600',
-            padding: '12px', textAlign: 'center', borderRadius: '8px',
-            marginBottom: '20px', fontWeight: 'bold',
-            border: confirmation.includes('⚠️') ? '1px solid #ffcccc' : '1px solid #ccffcc'
-          }}>
-            {confirmation}
+        {/* ── Messages de confirmation / erreur ── */}
+        {confirmation === 'success' && (
+          <div style={styles.banniereSucces}>
+            Ajouté au panier ! Tu peux continuer à commander ou valider ton panier.
+          </div>
+        )}
+        {confirmation === 'warning' && (
+          <div style={styles.banniereErreur}>
+            Choisis un tiramisu, un goût et une taille !
           </div>
         )}
 
-        {/* CHOIX DU TIRAMISU */}
+        {/* ── CHOIX DU TIRAMISU ── */}
         <section className="category-section">
           <h2 className="category-title">Qu'est-ce qui te tente ?</h2>
           <div className="dessert-list">
@@ -174,7 +184,7 @@ function Commande() {
           </div>
         </section>
 
-        {/* CHOIX DU GOUT */}
+        {/* ── CHOIX DU GOÛT ── */}
         {selection.tiramisu && (
           <section className="category-section">
             <h2 className="category-title">Quel goût ?</h2>
@@ -210,7 +220,7 @@ function Commande() {
           </section>
         )}
 
-        {/* CHOIX DE LA TAILLE */}
+        {/* ── CHOIX DE LA TAILLE ── */}
         {selection.gout && (
           <section className="category-section">
             <h2 className="category-title">Choisis ta taille</h2>
@@ -235,7 +245,7 @@ function Commande() {
                       if (!estSelectionnee) e.currentTarget.style.backgroundColor = '#f0e6d2';
                     }}
                   >
-                    {taille.nom} - <strong>{taille.prix}€</strong>
+                    {taille.nom} - <strong>{taille.prix} €</strong>
                   </span>
                 );
               })}
@@ -243,11 +253,11 @@ function Commande() {
           </section>
         )}
 
-        {/* CHOIX DES SUPPLEMENTS */}
+        {/* ── CHOIX DES SUPPLÉMENTS ── */}
         {selection.taille && (
           <section className="category-section">
             <h2 className="category-title">Une petite garniture ?</h2>
-            <p className="optionnel-text">Optionnel - +0,80€ par garniture, tu peux en prendre plusieurs !</p>
+            <p className="optionnel-text">Optionnel - +1 € par garniture</p>
             <div className="flavors-container" style={{ marginTop: '15px' }}>
               {menu.supplements.map((supp) => {
                 const estChoisi = selection.supplements.find(s => s.id_supplement === supp.id_supplement);
@@ -269,7 +279,7 @@ function Commande() {
                       if (!estChoisi) e.currentTarget.style.backgroundColor = '#f0e6d2';
                     }}
                   >
-                    {supp.nom} (+{supp.prix}€)
+                    {supp.nom} (+{supp.prix} €)
                   </span>
                 );
               })}
@@ -277,43 +287,106 @@ function Commande() {
           </section>
         )}
 
-        {/* QUANTITE ET AJOUT AU PANIER */}
+        {/* ── QUANTITÉ ET AJOUT AU PANIER ── */}
         {selection.taille && (
           <section className="category-section" style={{ textAlign: 'center' }}>
             <h2 className="category-title">Combien tu en veux ?</h2>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', margin: '20px 0' }}>
+              {/* Bug 9 : minimum 1 */}
               <button
                 onClick={() => setSelection(prev => ({ ...prev, quantite: Math.max(1, prev.quantite - 1) }))}
                 style={styles.boutonQuantite}
               >
-                −
+                -
               </button>
               <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{selection.quantite}</span>
+              {/* Bug 9 : maximum 10 */}
               <button
-                onClick={() => setSelection(prev => ({ ...prev, quantite: prev.quantite + 1 }))}
+                onClick={() => setSelection(prev => ({ ...prev, quantite: Math.min(10, prev.quantite + 1) }))}
                 style={styles.boutonQuantite}
               >
                 +
               </button>
             </div>
 
+            {/* Petit avertissement si on atteint 10 */}
+            {selection.quantite === 10 && (
+              <p style={{ fontSize: '0.85rem', color: '#c0392b', marginBottom: '10px' }}>
+                Maximum 10 par article.
+              </p>
+            )}
+
             <p style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#3b2f2f' }}>
-              Total : <span style={{ color: '#c0392b' }}>{calculerPrix()}€</span>
+              Total article : <span style={{ color: '#c0392b' }}>{calculerPrix()} €</span>
             </p>
 
             <button onClick={ajouterAuPanierHandler} style={styles.boutonAjouter}>
-              🛒 Ajouter au panier
+              Ajouter au panier
             </button>
           </section>
         )}
 
       </main>
+
+      {/* ── Bug 13 : BARRE PANIER FIXE EN BAS (style Uber Eats) ──
+          Visible uniquement si le panier contient au moins 1 article.
+          position: fixed = reste visible même en scrollant.
+          Elle permet d'accéder au panier sans remonter en haut. */}
+      {panier.length > 0 && (
+        <div style={styles.barrePanier} onClick={() => navigate('/checkout')}>
+          <div style={styles.barrePanierGauche}>
+            {/* Badge avec le nombre d'articles */}
+            <span style={styles.badge}>{panier.length}</span>
+            <span>Voir mon panier</span>
+          </div>
+          <span style={styles.barrePanierPrix}>{calculerTotalPanier()} €</span>
+        </div>
+      )}
+
     </div>
   );
 }
 
+// ─────────────────────────────────────────
+// STYLES
+// ─────────────────────────────────────────
 const styles = {
+  titre: {
+    textAlign: 'center',
+    fontSize: '1.8rem',
+    marginBottom: '10px',
+  },
+  banniereInfo: {
+    backgroundColor: '#fff8e6',
+    color: '#7a5c00',
+    border: '1px solid #f0c040',
+    borderRadius: '8px',
+    padding: '12px 20px',
+    textAlign: 'center',
+    marginBottom: '25px',
+    fontSize: '0.95rem',
+  },
+  banniereSucces: {
+    backgroundColor: '#e6ffe6',
+    color: '#006600',
+    border: '1px solid #ccffcc',
+    borderRadius: '8px',
+    padding: '12px',
+    textAlign: 'center',
+    marginBottom: '20px',
+    fontWeight: 'bold',
+  },
+  banniereErreur: {
+    backgroundColor: '#ffe6e6',
+    color: '#cc0000',
+    border: '1px solid #ffcccc',
+    borderRadius: '8px',
+    padding: '12px',
+    textAlign: 'center',
+    marginBottom: '20px',
+    fontWeight: 'bold',
+  },
   boutonQuantite: {
     backgroundColor: '#3b2f2f',
     color: 'white',
@@ -334,6 +407,47 @@ const styles = {
     cursor: 'pointer',
     marginTop: '10px',
     fontWeight: 'bold',
+  },
+
+  // ── Barre panier fixe (style Uber Eats) ──
+  barrePanier: {
+    position: 'fixed',       // Reste en bas même en scrollant
+    bottom: '0',
+    left: '0',
+    right: '0',
+    backgroundColor: '#c0392b',
+    color: 'white',
+    padding: '16px 24px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    cursor: 'pointer',
+    zIndex: 1000,             // Au-dessus de tout le reste
+    boxShadow: '0 -4px 12px rgba(0,0,0,0.15)',
+  },
+  barrePanierGauche: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    fontWeight: 'bold',
+    fontSize: '1rem',
+  },
+  // Badge rond avec le nombre d'articles
+  badge: {
+    backgroundColor: 'white',
+    color: '#c0392b',
+    borderRadius: '50%',
+    width: '26px',
+    height: '26px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 'bold',
+    fontSize: '0.9rem',
+  },
+  barrePanierPrix: {
+    fontWeight: 'bold',
+    fontSize: '1.1rem',
   },
 };
 

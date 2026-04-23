@@ -54,8 +54,13 @@ model Commande {
   id_commande    Int             @id @default(autoincrement())
   id_utilisateur Int
   dateCreation   DateTime        @default(now())
+  dateRetrait    DateTime?
+  livraisonSamedi Boolean       @default(false)
   statut         String          @default("EN_ATTENTE")
   prixTotal      Float
+  // Code court unique remis au client pour récupérer sa commande
+  // Ex: "A3F9K2" — généré automatiquement à la création
+  codeRetrait    String?         @unique
   utilisateur    Utilisateur     @relation(fields: [id_utilisateur], references: [id_utilisateur])
   lignes         LigneCommande[]
 }
