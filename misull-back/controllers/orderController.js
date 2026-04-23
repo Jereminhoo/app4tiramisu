@@ -1,20 +1,26 @@
 // controllers/orderController.js
 const orderService = require('../services/orderService');
-const telegramService = require('../services/telegramService'); // Ajout
+const telegramService = require('../services/telegramService');
 
 const createOrder = async (req, res) => {
   try {
     const id_utilisateur = req.utilisateur.id;
-    const { prixTotal, lignes } = req.body;
+    // On récupère aussi dateRetrait et livraisonSamedi envoyés par le frontend
+    const { prixTotal, lignes, dateRetrait, livraisonSamedi } = req.body;
 
     if (!prixTotal || !lignes || lignes.length === 0) {
       return res.status(400).json({ message: "Données de commande incomplètes." });
     }
 
-    const nouvelleCommande = await orderService.createOrder(id_utilisateur, prixTotal, lignes);
+    const nouvelleCommande = await orderService.createOrder(
+      id_utilisateur,
+      prixTotal,
+      lignes,
+      dateRetrait,
+      livraisonSamedi
+    );
 
-    // On envoie la notification Telegram APRÈS avoir sauvegardé la commande
-    // On passe le pseudo depuis le token pour l'afficher dans le message
+    // Notification Telegram après sauvegarde
     await telegramService.envoyerNotification(nouvelleCommande, req.utilisateur.pseudo);
 
     res.status(201).json({ message: "Commande validée !", commande: nouvelleCommande });
@@ -25,7 +31,6 @@ const createOrder = async (req, res) => {
   }
 };
 
-// Récupère l'historique des commandes du client connecté
 const getHistorique = async (req, res) => {
   try {
     const id_utilisateur = req.utilisateur.id;
@@ -37,7 +42,6 @@ const getHistorique = async (req, res) => {
   }
 };
 
-// Annule une commande dans le délai de 30 minutes
 const annulerCommande = async (req, res) => {
   try {
     const { id } = req.params;
@@ -49,7 +53,6 @@ const annulerCommande = async (req, res) => {
   }
 };
 
-// Récupère le statut d'une commande
 const getStatut = async (req, res) => {
   try {
     const { id } = req.params;

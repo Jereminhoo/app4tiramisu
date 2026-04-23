@@ -2,13 +2,17 @@
 const prisma = require('../prisma/client');
 const telegramService = require('./telegramService');
 
-// Crée une commande
-const createOrder = async (id_utilisateur, prixTotal, lignes) => {
+// Crée une commande avec date de retrait et option livraison
+const createOrder = async (id_utilisateur, prixTotal, lignes, dateRetrait, livraisonSamedi) => {
   return await prisma.$transaction(async (tx) => {
     const nouvelleCommande = await tx.commande.create({
       data: {
         id_utilisateur,
         prixTotal,
+        // On convertit la date en objet Date si elle est fournie
+        dateRetrait: dateRetrait ? new Date(dateRetrait) : null,
+        // false par défaut si non fourni
+        livraisonSamedi: livraisonSamedi || false,
         lignes: {
           create: lignes.map((ligne) => ({
             id_tiramisu: ligne.id_tiramisu,
@@ -36,7 +40,6 @@ const createOrder = async (id_utilisateur, prixTotal, lignes) => {
   });
 };
 
-// Récupère toutes les commandes d'un utilisateur avec le détail
 const getHistorique = async (id_utilisateur) => {
   return await prisma.commande.findMany({
     where: { id_utilisateur },
@@ -54,7 +57,6 @@ const getHistorique = async (id_utilisateur) => {
   });
 };
 
-// Annule une commande si elle a moins de 30 minutes
 const annulerCommande = async (id_commande, id_utilisateur) => {
   const commande = await prisma.commande.findUnique({
     where: { id_commande: parseInt(id_commande) }
@@ -72,13 +74,11 @@ const annulerCommande = async (id_commande, id_utilisateur) => {
     data: { statut: 'ANNULEE' }
   });
 
-  // Notification Telegram d'annulation
   await telegramService.envoyerAnnulation(commande.id_commande);
 
   return commandeAnnulee;
 };
 
-// Récupère le statut d'une commande
 const getStatut = async (id_commande, id_utilisateur) => {
   const commande = await prisma.commande.findUnique({
     where: { id_commande: parseInt(id_commande) },
@@ -91,7 +91,6 @@ const getStatut = async (id_commande, id_utilisateur) => {
   });
 
   if (!commande) throw new Error('Commande introuvable.');
-  // Sécurité : on vérifie que la commande appartient à l'utilisateur
   if (commande.id_utilisateur !== id_utilisateur) throw new Error('Action non autorisée.');
 
   return commande;

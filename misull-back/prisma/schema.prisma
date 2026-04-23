@@ -53,6 +53,10 @@ model Commande {
   id_commande    Int             @id @default(autoincrement())
   id_utilisateur Int
   dateCreation   DateTime        @default(now())
+  // Date choisie par le client pour récupérer sa commande (minimum +24h)
+  dateRetrait    DateTime?
+  // true si le client veut une livraison le samedi
+  livraisonSamedi Boolean       @default(false)
   statut         String          @default("EN_ATTENTE")
   prixTotal      Float
   utilisateur    Utilisateur     @relation(fields: [id_utilisateur], references: [id_utilisateur])

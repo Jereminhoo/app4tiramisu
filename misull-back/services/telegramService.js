@@ -1,29 +1,51 @@
 // services/telegramService.js
-// Ce service envoie des notifications sur Telegram
-// à chaque fois qu'une commande est passée.
+// Envoie des notifications Telegram à chaque événement important.
+
+// Formate une date en français lisible
+// Ex : "vendredi 25 avril 2026 à 15h30"
+const formaterDate = (date) => {
+  if (!date) return 'Non précisée';
+  return new Date(date).toLocaleString('fr-BE', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Brussels'
+  });
+};
 
 const envoyerNotification = async (commande, pseudo) => {
   try {
-    // On construit le message qui sera envoyé sur Telegram
+    // On construit le détail de chaque ligne de commande
+    // avec les suppléments s'il y en a
+    const detailLignes = commande.lignes.map(ligne => {
+      // On liste les noms des suppléments choisis
+      const supplements = ligne.supplements.length > 0
+        ? `\n     Garnitures : ${ligne.supplements.map(s => s.nom).join(', ')}`
+        : '';
+
+      return `- ${ligne.tiramisu.nom} (${ligne.gout.nom}) - ${ligne.taille.nom} x${ligne.quantite}${supplements}`;
+    }).join('\n');
+
     const message = `
 🍰 Nouvelle commande !
 
 👤 Client : ${pseudo}
 📦 Commande #${commande.id_commande}
-💰 Total : ${commande.prixTotal}€
+💰 Total : ${commande.prixTotal} €
+📅 Retrait souhaité : ${formaterDate(commande.dateRetrait)}
+🚗 Livraison samedi : ${commande.livraisonSamedi ? 'Oui (+2,50 €)' : 'Non'}
 
 🛒 Détail :
-${commande.lignes.map(ligne => 
-  `• ${ligne.tiramisu.nom} - ${ligne.taille.nom} - ${ligne.gout.nom} x${ligne.quantite}`
-).join('\n')}
+${detailLignes}
 
 ⚡ Statut : En attente
     `.trim();
 
-    // On appelle l'API Telegram avec fetch
-    // C'est une requête HTTP vers les serveurs de Telegram
     const url = `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`;
-    
+
     const reponse = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -34,7 +56,7 @@ ${commande.lignes.map(ligne =>
     });
 
     const data = await reponse.json();
-    
+
     if (!data.ok) {
       console.error('Erreur Telegram :', data);
     } else {
@@ -43,12 +65,10 @@ ${commande.lignes.map(ligne =>
 
   } catch (error) {
     // On ne fait pas crasher le serveur si Telegram est indisponible
-    // La commande est déjà enregistrée — la notif est juste un bonus
     console.error('Erreur envoi Telegram :', error);
   }
 };
 
-// Notifie l'admin qu'une commande a été annulée
 const envoyerAnnulation = async (id_commande) => {
   try {
     const message = `❌ Commande #${id_commande} annulée par le client.`;
