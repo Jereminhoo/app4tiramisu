@@ -13,6 +13,7 @@ import Commande from './pages/Commande';
 import Checkout from './pages/Checkout';
 import Profil from './pages/Profil';
 import Admin from './pages/Admin';
+import MesCommandes from './pages/MesCommandes';
 
 // On importe la barre de navigation
 import Navbar from './components/Navbar';
@@ -36,6 +37,8 @@ function App() {
         {/* Pages privées — nécessitent d'être connecté */}
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/profil" element={<Profil />} />
+
+        <Route path="/mes-commandes" element={<MesCommandes />} />
 
         {/* Page admin — réservée aux administrateurs */}
         <Route path="/admin" element={<Admin />} />
