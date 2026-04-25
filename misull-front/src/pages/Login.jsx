@@ -79,13 +79,15 @@ function Login() {
         const reponse = await api.post('/api/users/register', { pseudo, motDePasse });
         const { token, user } = reponse.data;
         seConnecter(user, token); // On connecte l'utilisateur directement
-        navigate('/commande');    // On redirige vers la page de commande
+        // Si admin → dashboard admin, sinon → page commande
+        navigate(user.role === 'ADMIN' ? '/admin' : '/commande');
       } else {
         // ─── CONNEXION NORMALE ───
         const reponse = await api.post('/api/users/login', { pseudo, motDePasse });
         const { token, user } = reponse.data;
         seConnecter(user, token);
-        navigate('/commande');
+        // Si admin → dashboard admin, sinon → page commande
+        navigate(user.role === 'ADMIN' ? '/admin' : '/commande');
       }
     } catch (error) {
       setErreur(true);

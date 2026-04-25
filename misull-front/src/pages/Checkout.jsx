@@ -1,10 +1,9 @@
 // src/pages/Checkout.jsx
 // Page panier + validation de commande.
-// Gère : choix date de retrait, option livraison samedi,
-// confirmation avant annulation, polling du statut.
+// Gère : choix date de retrait, livraison samedi, validation horaires config, polling statut.
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import useAuthStore from '../store/useAuthStore';
 import '../App.css';
@@ -18,13 +17,20 @@ function Checkout() {
   const [tempsRestant, setTempsRestant] = useState(null);
   const [message, setMessage] = useState('');
   const [statutActuel, setStatutActuel] = useState(commandeValidee?.statut || null);
+  const [demandeConfirmation, setDemandeConfirmation] = useState(false);
 
-  // ── Bug 11 : date de retrait choisie par l'utilisateur ──
-  // On calcule la date minimum : maintenant + 24h
+  // ── Config des horaires chargée depuis l'API ──
+  const [config, setConfig] = useState({ heureOuverture: '15', heureFermeture: '23' });
+
+  // ── Option livraison ──
+  // false = retrait, true = livraison samedi
+  const [livraisonSamedi, setLivraisonSamedi] = useState(false);
+  const PRIX_LIVRAISON = 2.50;
+
+  // ── Date minimum : maintenant + 24h ──
   const maintenant = new Date();
   const dateMiniDate = new Date(maintenant.getTime() + 24 * 60 * 60 * 1000);
 
-  // Format pour l'input datetime-local : "YYYY-MM-DDTHH:MM"
   const formatDatetimeLocal = (date) => {
     const annee = date.getFullYear();
     const mois = String(date.getMonth() + 1).padStart(2, '0');
@@ -34,21 +40,29 @@ function Checkout() {
     return `${annee}-${mois}-${jour}T${heures}:${minutes}`;
   };
 
+  // Pour la livraison samedi on n'a besoin que de la date (pas l'heure)
+  const formatDate = (date) => {
+    const annee = date.getFullYear();
+    const mois = String(date.getMonth() + 1).padStart(2, '0');
+    const jour = String(date.getDate()).padStart(2, '0');
+    return `${annee}-${mois}-${jour}`;
+  };
+
   const dateMiniString = formatDatetimeLocal(dateMiniDate);
+  const dateMiniDateString = formatDate(dateMiniDate);
+
   const [dateRetrait, setDateRetrait] = useState(dateMiniString);
-
-  // ── Bug 12 : option livraison samedi ──
-  const [livraisonSamedi, setLivraisonSamedi] = useState(false);
-  const PRIX_LIVRAISON = 2.50;
-
-  // ── Bug 14 : confirmation avant annulation ──
-  const [demandeConfirmation, setDemandeConfirmation] = useState(false);
+  const [dateLivraison, setDateLivraison] = useState(dateMiniDateString);
 
   const navigate = useNavigate();
 
-  // Protection : redirige si pas connecté
   useEffect(() => {
     if (!utilisateur) navigate('/login');
+
+    // On charge la config des horaires au démarrage
+    api.get('/api/config')
+      .then(rep => setConfig(rep.data.config))
+      .catch(e => console.error('Erreur config :', e));
   }, []);
 
   // ── Chrono + Polling du statut toutes les 10 secondes ──
@@ -67,7 +81,6 @@ function Checkout() {
       setTempsRestant(secondesRestantes);
     }
 
-    // Chrono qui décompte chaque seconde
     const intervalChrono = setInterval(() => {
       setTempsRestant(prev => {
         if (prev <= 1) { clearInterval(intervalChrono); return 0; }
@@ -75,15 +88,12 @@ function Checkout() {
       });
     }, 1000);
 
-    // Polling : vérifie le statut toutes les 10 secondes
-    // Bug 19 : si l'admin change le statut, le chrono s'arrête
     const intervalPolling = setInterval(async () => {
       try {
         const rep = await api.get(`/api/orders/${commandeValidee.id_commande}/statut`);
         const nouveauStatut = rep.data.commande.statut;
         setStatutActuel(nouveauStatut);
 
-        // Dès que le statut change, on arrête le chrono
         if (nouveauStatut !== 'EN_ATTENTE') {
           setTempsRestant(0);
           clearInterval(intervalChrono);
@@ -103,7 +113,6 @@ function Checkout() {
   // ── Calcul du total panier ──
   const calculerTotal = () => {
     const totalArticles = panier.reduce((total, ligne) => total + ligne.prix, 0);
-    // On ajoute la livraison si l'option est cochée
     const totalFinal = livraisonSamedi ? totalArticles + PRIX_LIVRAISON : totalArticles;
     return totalFinal.toFixed(2);
   };
@@ -118,18 +127,61 @@ function Checkout() {
   const validerCommande = async () => {
     if (panier.length === 0) return;
 
-    // Vérifier que la date choisie est bien dans au moins 24h
-    const dateChoisie = new Date(dateRetrait);
-    if (dateChoisie < dateMiniDate) {
-      setMessage('La date de retrait doit être au moins 24h après la commande.');
-      return;
+    let dateFinale;
+
+    if (livraisonSamedi) {
+      // ── Validation livraison samedi ──
+      const dateChoisie = new Date(dateLivraison);
+
+      // Vérifier délai minimum 24h
+      // Pour la livraison samedi, on compare juste les dates (pas les heures)
+      // car l'heure sera convenue sur Instagram
+      const dateMiniSansHeure = new Date(dateMiniDate);
+      dateMiniSansHeure.setHours(0, 0, 0, 0);
+      if (dateChoisie < dateMiniSansHeure) {
+        setMessage('La date de livraison doit être au moins 24h après la commande.');
+        return;
+      }
+
+      // getDay() : 0=dimanche, 1=lundi, ..., 6=samedi
+      if (dateChoisie.getDay() !== 6) {
+        setMessage('La livraison est uniquement disponible le samedi.');
+        return;
+      }
+
+      // Pour la livraison samedi, on met midi par défaut
+      // L'heure exacte sera convenue sur Instagram
+      dateChoisie.setHours(12, 0, 0, 0);
+      dateFinale = dateChoisie;
+
+    } else {
+      // ── Validation retrait avec horaires ──
+      const dateChoisie = new Date(dateRetrait);
+
+      // Vérifier délai minimum 24h
+      if (dateChoisie < dateMiniDate) {
+        setMessage('La date de retrait doit être au moins 24h après la commande.');
+        return;
+      }
+
+      // Vérifier que l'heure est dans les horaires configurés par l'admin
+      const heures = dateChoisie.getHours();
+      const heureOuverture = parseInt(config.heureOuverture);
+      const heureFermeture = parseInt(config.heureFermeture);
+
+      if (heures < heureOuverture || heures >= heureFermeture) {
+        setMessage(`Le retrait est possible uniquement entre ${heureOuverture}h et ${heureFermeture}h.`);
+        return;
+      }
+
+      dateFinale = dateChoisie;
     }
 
     try {
       const body = {
         prixTotal: parseFloat(calculerTotal()),
-        livraisonSamedi: livraisonSamedi,
-        dateRetrait: dateChoisie.toISOString(),
+        livraisonSamedi,
+        dateRetrait: dateFinale.toISOString(),
         lignes: panier.map(ligne => ({
           id_tiramisu: ligne.id_tiramisu,
           id_taille: ligne.id_taille,
@@ -147,13 +199,9 @@ function Checkout() {
     }
   };
 
-  // ── Bug 14 : annulation en deux étapes ──
-  // Étape 1 : on demande confirmation
-  const demanderAnnulation = () => {
-    setDemandeConfirmation(true);
-  };
+  // ── Annulation en deux étapes ──
+  const demanderAnnulation = () => setDemandeConfirmation(true);
 
-  // Étape 2 : l'utilisateur confirme
   const confirmerAnnulation = async () => {
     try {
       await api.put(`/api/orders/${commandeValidee.id_commande}/annuler`);
@@ -180,7 +228,8 @@ function Checkout() {
             <p style={{ color: '#666' }}>
               Numéro de commande : <strong>#{commandeValidee.id_commande}</strong>
             </p>
-            {/* Code de retrait bien visible pour que le client le donne au retrait */}
+
+            {/* Code de retrait bien visible */}
             <div style={styles.codeRetrait}>
               <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', color: '#666' }}>
                 Ton code de retrait :
@@ -194,31 +243,57 @@ function Checkout() {
             </div>
           </div>
 
-          {/* Bug 17 : message pour voir l'avancement */}
+          {/* Message avancement */}
+          {/* Avancement + lien mes commandes */}
           <div style={styles.banniereInfo}>
-            Pour connaître l'avancement de ta commande, actualise régulièrement cette page.
-            On t'indiquera quand venir la chercher !
+            Actualise régulièrement{' '}
+            <Link to="/mes-commandes" style={{ color: '#c0392b', fontWeight: 'bold' }}>
+              mes commandes
+            </Link>
+            {' '}pour suivre l'avancement. On t'indiquera quand venir chercher !
           </div>
 
-          {/* Bug 18 : où récupérer la commande */}
+          {/* Où récupérer / livraison */}
           <div style={styles.banniereRetrait}>
-            <strong>Où récupérer ta commande ?</strong>
-            <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem' }}>
-              Contacte-nous sur Instagram{' '}
-              <a 
-                href="https://www.instagram.com/misulalouviere"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: '#c0392b', fontWeight: 'bold' }}
-              >
-                @misulalouviere
-              </a>{' '}
-              en mentionnant ton pseudo <strong>{utilisateur?.pseudo}</strong> et
-              ton numéro de commande <strong>#{commandeValidee.id_commande}</strong>.
-            </p>
+            {commandeValidee.livraisonSamedi ? (
+              <>
+                <strong>Livraison samedi</strong>
+                <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem' }}>
+                  Contacte-nous sur Instagram{' '}
+                  <a
+                    href="https://www.instagram.com/misulalouviere"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#c0392b', fontWeight: 'bold' }}
+                  >
+                    @misulalouviere
+                  </a>{' '}
+                  pour convenir de l'heure de livraison. Mentionne ton pseudo{' '}
+                  <strong>{utilisateur?.pseudo}</strong> et le code{' '}
+                  <strong>{commandeValidee.codeRetrait}</strong>.
+                </p>
+              </>
+            ) : (
+              <>
+                <strong>Où récupérer ta commande ?</strong>
+                <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem' }}>
+                  Contacte-nous sur Instagram{' '}
+                  <a
+                    href="https://www.instagram.com/misulalouviere"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#c0392b', fontWeight: 'bold' }}
+                  >
+                    @misulalouviere
+                  </a>{' '}
+                  en mentionnant ton pseudo <strong>{utilisateur?.pseudo}</strong> et
+                  ton code <strong>{commandeValidee.codeRetrait}</strong>.
+                </p>
+              </>
+            )}
           </div>
 
-          {/* Statut EN_ATTENTE : chrono visible */}
+          {/* EN_ATTENTE : chrono */}
           {statutActuel === 'EN_ATTENTE' && tempsRestant > 0 && (
             <div style={styles.banniereAnnulation}>
               <p style={{ margin: '0 0 10px 0' }}>
@@ -226,7 +301,6 @@ function Checkout() {
               </p>
               <span style={styles.timer}>{formaterTemps(tempsRestant)}</span>
 
-              {/* Bug 14 : confirmation en deux étapes */}
               {!demandeConfirmation ? (
                 <button onClick={demanderAnnulation} style={styles.boutonAnnuler}>
                   Annuler ma commande
@@ -252,7 +326,7 @@ function Checkout() {
             </div>
           )}
 
-          {/* EN_ATTENTE mais délai écoulé */}
+          {/* EN_ATTENTE délai écoulé */}
           {statutActuel === 'EN_ATTENTE' && tempsRestant === 0 && (
             <p style={{ textAlign: 'center', color: '#888' }}>
               Le délai d'annulation est écoulé.
@@ -280,12 +354,21 @@ function Checkout() {
             </div>
           )}
 
-          <button
-            onClick={() => { clearCommandeValidee(); navigate('/commande'); }}
-            style={styles.boutonRetour}
-          >
-            Passer une nouvelle commande
-          </button>
+          {/* Boutons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+            <button
+              onClick={() => { clearCommandeValidee(); navigate('/commande'); }}
+              style={styles.boutonCommander}
+            >
+              Commander un autre tiramisu
+            </button>
+            <button
+              onClick={() => navigate('/mes-commandes')}
+              style={styles.boutonRetour}
+            >
+              Voir mes commandes
+            </button>
+          </div>
 
         </div>
       </div>
@@ -316,7 +399,6 @@ function Checkout() {
           Ton panier
         </h1>
 
-        {/* Message simulation discret */}
         <p style={styles.simulation}>
           Aucune transaction d'argent n'a lieu sur ce site.
         </p>
@@ -325,14 +407,12 @@ function Checkout() {
           <div style={styles.banniereErreur}>{message}</div>
         )}
 
-        {/* ── Liste des articles ── */}
+        {/* Liste des articles */}
         <section className="category-section">
           {panier.map((ligne, index) => (
             <div key={index} style={styles.lignePanier}>
               <div style={{ flex: 1 }}>
-                <h3 style={{ margin: '0 0 5px 0', color: '#3b2f2f' }}>
-                  {ligne.nom}
-                </h3>
+                <h3 style={{ margin: '0 0 5px 0', color: '#3b2f2f' }}>{ligne.nom}</h3>
                 <p style={{ margin: '0', color: '#666', fontSize: '0.9rem' }}>
                   {ligne.nomTaille} - {ligne.nomGout}
                 </p>
@@ -357,49 +437,90 @@ function Checkout() {
           ))}
         </section>
 
-        {/* ── Bug 12 : option livraison samedi ── */}
+        {/* ── Choix : retrait ou livraison samedi ── */}
         <section className="category-section">
-          <div style={styles.livraisonBox}>
-            <div>
-              <strong>Livraison le samedi</strong>
+          <h2 className="category-title">Mode de récupération</h2>
+
+          {/* Boutons radio visuels pour choisir */}
+          <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '20px' }}>
+            <div
+              onClick={() => setLivraisonSamedi(false)}
+              style={{
+                ...styles.choixBox,
+                border: !livraisonSamedi ? '2px solid #c0392b' : '2px solid #c8b49c',
+                backgroundColor: !livraisonSamedi ? '#fdf0ee' : '#faf7f2',
+              }}
+            >
+              <strong>Retrait</strong>
               <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
-                +{PRIX_LIVRAISON.toFixed(2)} € — disponible uniquement le samedi
+                Gratuit — entre {config.heureOuverture}h et {config.heureFermeture}h
               </p>
             </div>
-            {/* 
-              Interrupteur (toggle) pour activer/désactiver la livraison.
-              Un simple checkbox stylisé suffit ici.
-            */}
-            <input
-              type="checkbox"
-              checked={livraisonSamedi}
-              onChange={e => setLivraisonSamedi(e.target.checked)}
-              style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#c0392b' }}
-            />
+
+            <div
+              onClick={() => setLivraisonSamedi(true)}
+              style={{
+                ...styles.choixBox,
+                border: livraisonSamedi ? '2px solid #c0392b' : '2px solid #c8b49c',
+                backgroundColor: livraisonSamedi ? '#fdf0ee' : '#faf7f2',
+              }}
+            >
+              <strong>Livraison samedi</strong>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
+                +{PRIX_LIVRAISON.toFixed(2)} € — heure à convenir sur Instagram
+              </p>
+            </div>
           </div>
+
+          {/* Sélecteur de date selon le mode choisi */}
+          {!livraisonSamedi ? (
+            <div>
+              <label style={styles.label}>
+                Quand veux-tu venir chercher ta commande ?
+              </label>
+              <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '8px' }}>
+                Minimum 24h après la commande, entre {config.heureOuverture}h et {config.heureFermeture}h.
+              </p>
+              <input
+                type="datetime-local"
+                value={dateRetrait}
+                min={dateMiniString}
+                onChange={e => setDateRetrait(e.target.value)}
+                style={styles.inputDate}
+              />
+            </div>
+          ) : (
+            <div>
+              <label style={styles.label}>
+                Quel samedi veux-tu être livré ?
+              </label>
+              <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '8px' }}>
+                Minimum 24h après la commande. L'heure sera convenue sur Instagram.
+              </p>
+              <input
+                type="date"
+                value={dateLivraison}
+                min={dateMiniDateString}
+                onChange={e => setDateLivraison(e.target.value)}
+                style={styles.inputDate}
+              />
+              <div style={styles.banniereInfo}>
+                Contacte-nous sur{' '}
+                <a
+                  href="https://www.instagram.com/misulalouviere"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: '#c0392b', fontWeight: 'bold' }}
+                >
+                  @misulalouviere
+                </a>{' '}
+                après ta commande pour convenir de l'heure de livraison.
+              </div>
+            </div>
+          )}
         </section>
 
-        {/* ── Bug 11 : choix de la date de retrait ── */}
-        <section className="category-section">
-          <h2 className="category-title">Quand veux-tu récupérer ta commande ?</h2>
-          <p style={{ fontSize: '0.9rem', color: '#888', marginBottom: '10px' }}>
-            Minimum 24h après la commande. On est étudiants, merci pour ta patience !
-          </p>
-          {/*
-            datetime-local = input HTML natif pour choisir date + heure.
-            min = la date minimum autorisée (maintenant + 24h).
-            On utilise le format "YYYY-MM-DDTHH:MM" pour la valeur.
-          */}
-          <input
-            type="datetime-local"
-            value={dateRetrait}
-            min={dateMiniString}
-            onChange={e => setDateRetrait(e.target.value)}
-            style={styles.inputDate}
-          />
-        </section>
-
-        {/* ── Total et boutons ── */}
+        {/* Total et boutons */}
         <section className="category-section" style={{ textAlign: 'center' }}>
           <p style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#3b2f2f' }}>
             Total : <span style={{ color: '#c0392b' }}>{calculerTotal()} €</span>
@@ -460,7 +581,8 @@ const styles = {
     textAlign: 'center',
     width: '100%',
     boxSizing: 'border-box',
-    fontSize: '0.95rem',
+    fontSize: '0.9rem',
+    marginTop: '10px',
   },
   banniereRetrait: {
     backgroundColor: '#faf7f2',
@@ -515,6 +637,22 @@ const styles = {
     display: 'block',
     marginBottom: '15px',
   },
+  codeRetrait: {
+    backgroundColor: '#faf7f2',
+    border: '2px solid #c8b49c',
+    borderRadius: '12px',
+    padding: '15px 25px',
+    textAlign: 'center',
+    width: '100%',
+    boxSizing: 'border-box',
+    marginTop: '15px',
+  },
+  codeRetraitValeur: {
+    fontSize: '2.5rem',
+    fontWeight: 'bold',
+    color: '#c0392b',
+    letterSpacing: '8px',
+  },
   lignePanier: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -522,14 +660,21 @@ const styles = {
     padding: '15px 0',
     borderBottom: '1px solid #f0e6d2',
   },
-  livraisonBox: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#faf7f2',
-    border: '1px solid #c8b49c',
+  // Boîtes de choix retrait/livraison — cliquables
+  choixBox: {
+    flex: 1,
+    minWidth: '140px',
+    padding: '15px',
     borderRadius: '10px',
-    padding: '15px 20px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  label: {
+    display: 'block',
+    fontWeight: 'bold',
+    color: '#3b2f2f',
+    marginBottom: '6px',
+    fontSize: '0.95rem',
   },
   inputDate: {
     width: '100%',
@@ -598,22 +743,20 @@ const styles = {
     cursor: 'pointer',
     fontSize: '1rem',
     marginTop: '10px',
+    width: '100%',
   },
-  codeRetrait: {
-  backgroundColor: '#faf7f2',
-  border: '2px solid #c8b49c',
-  borderRadius: '12px',
-  padding: '15px 25px',
-  textAlign: 'center',
-  width: '100%',
-  boxSizing: 'border-box',
-},
-codeRetraitValeur: {
-  fontSize: '2.5rem',
-  fontWeight: 'bold',
-  color: '#c0392b',
-  letterSpacing: '8px', // Espacement pour que le code soit facile à lire
-},
+  boutonCommander: {
+    backgroundColor: '#c0392b',
+    color: 'white',
+    border: 'none',
+    padding: '12px 25px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontWeight: 'bold',
+    marginTop: '10px',
+    width: '100%',
+  },
 };
 
 export default Checkout;
