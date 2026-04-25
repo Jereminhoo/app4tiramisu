@@ -24,6 +24,8 @@ function Admin() {
   const [formulaire, setFormulaire] = useState({ nom: '', description: '', listeIngredients: '' });
   const [tiramisuEnEdition, setTiramisuEnEdition] = useState(null); // null = mode ajout
 
+  // État pour la configuration des horaires
+const [config, setConfig] = useState({ heureOuverture: '15', heureFermeture: '23' });
   // Messages
   const [message, setMessage] = useState('');
 
@@ -38,6 +40,7 @@ function Admin() {
     chargerCommandes();
     chargerUtilisateurs();
     chargerCatalogue();
+    chargerConfig();
   }, []);
 
   // ─────────────────────────────────────────────
@@ -63,6 +66,24 @@ function Admin() {
       setTiramisus(rep.data.tiramisus);
     } catch (e) { console.error(e); }
   };
+
+  // Charge la configuration depuis l'API
+const chargerConfig = async () => {
+  try {
+    const rep = await api.get('/api/config');
+    setConfig(rep.data.config);
+  } catch (e) { console.error(e); }
+};
+
+// Sauvegarde la configuration
+const sauvegarderConfig = async () => {
+  try {
+    await api.put('/api/config', config);
+    afficherMessage('Configuration sauvegardée !');
+  } catch (e) {
+    afficherMessage(e.response?.data?.message || 'Erreur.', true);
+  }
+};
 
   // ─────────────────────────────────────────────
   // ACTIONS COMMANDES
@@ -186,7 +207,7 @@ function Admin() {
 
         {/* Onglets */}
         <div style={styles.onglets}>
-          {['commandes', 'utilisateurs', 'catalogue'].map((o) => (
+          {['commandes', 'utilisateurs', 'catalogue', 'configuration'].map((o) => (
             <button
               key={o}
               onClick={() => setOnglet(o)}
@@ -199,6 +220,7 @@ function Admin() {
               {o === 'commandes' && 'Commandes'}
               {o === 'utilisateurs' && 'Utilisateurs'}
               {o === 'catalogue' && 'Catalogue'}
+              {o === 'configuration' && 'Configuration'}
             </button>
           ))}
         </div>
@@ -412,6 +434,72 @@ function Admin() {
           </section>
         )}
 
+
+      {/* ── ONGLET CONFIGURATION ── */}
+      {onglet === 'configuration' && (
+        <section className="category-section">
+          <h2 className="category-title">Configuration des horaires</h2>
+
+          <div style={styles.formulaire}>
+            <p style={{ margin: '0 0 15px 0', fontSize: '0.9rem', color: '#666' }}>
+              Ces horaires s'appliquent aux retraits. 
+              En dehors de ces heures, les clients ne pourront pas valider une commande.
+            </p>
+
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              {/* Heure d'ouverture */}
+              <div style={{ flex: 1 }}>
+                <label style={styles.label}>Heure d'ouverture</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="23"
+                  value={config.heureOuverture}
+                  onChange={e => setConfig(prev => ({ ...prev, heureOuverture: e.target.value }))}
+                  style={styles.input}
+                />
+                <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '4px' }}>
+                  Ex: 15 pour 15h00
+                </p>
+              </div>
+
+              {/* Heure de fermeture */}
+              <div style={{ flex: 1 }}>
+                <label style={styles.label}>Heure de fermeture</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="23"
+                  value={config.heureFermeture}
+                  onChange={e => setConfig(prev => ({ ...prev, heureFermeture: e.target.value }))}
+                  style={styles.input}
+                />
+                <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '4px' }}>
+                  Ex: 23 pour 23h00
+                </p>
+              </div>
+            </div>
+
+            <button onClick={sauvegarderConfig} style={styles.boutonValider}>
+              Sauvegarder
+            </button>
+          </div>
+
+          {/* Aperçu des horaires actuels */}
+          <div style={{
+            marginTop: '20px',
+            backgroundColor: '#e6ffe6',
+            border: '1px solid #ccffcc',
+            borderRadius: '10px',
+            padding: '15px',
+            textAlign: 'center',
+          }}>
+            <p style={{ margin: 0, color: '#006600', fontWeight: 'bold' }}>
+              Horaires actuels : {config.heureOuverture}h00 - {config.heureFermeture}h00
+            </p>
+          </div>
+        </section>
+      )}
       </main>
     </div>
   );
@@ -517,6 +605,13 @@ const styles = {
     cursor: 'pointer',
     fontSize: '0.85rem',
   },
+  label: {
+  display: 'block',
+  marginBottom: '6px',
+  fontWeight: 'bold',
+  color: '#3b2f2f',
+  fontSize: '0.9rem',
+},
 };
 
 export default Admin;

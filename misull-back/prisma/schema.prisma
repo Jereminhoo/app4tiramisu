@@ -78,3 +78,11 @@ model LigneCommande {
   gout         Gout       @relation(fields: [id_gout], references: [id_gout])
   supplements  Supplement[] @relation("LigneToSupplement")
 }
+
+// Table de configuration générique clé/valeur
+// Permet à l'admin de modifier des paramètres sans toucher au code
+// Ex: heureOuverture, heureFermeture, delaiMinJours...
+model Config {
+  cle    String @id  // La clé est unique, ex: "heureOuverture"
+  valeur String      // La valeur, ex: "15"
+}

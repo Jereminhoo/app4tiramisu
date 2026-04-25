@@ -68,6 +68,9 @@ app.use('/api/orders', require('./routes/orderRoutes'));
 // Routes admin (protégées — token + rôle ADMIN requis)
 app.use('/api/admin', require('./routes/adminRoutes'));
 
+// Routes config (GET public, PUT admin uniquement)
+app.use('/api/config', require('./routes/configRoutes'));
+
 // ─────────────────────────────────────────────
 // PAGE D'ACCUEIL
 // ─────────────────────────────────────────────
