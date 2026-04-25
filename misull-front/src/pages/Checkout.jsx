@@ -403,9 +403,6 @@ function Checkout() {
           Aucune transaction d'argent n'a lieu sur ce site.
         </p>
 
-        {message && (
-          <div style={styles.banniereErreur}>{message}</div>
-        )}
 
         {/* Liste des articles */}
         <section className="category-section">
@@ -453,7 +450,7 @@ function Checkout() {
             >
               <strong>Retrait</strong>
               <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
-                Gratuit — entre {config.heureOuverture}h et {config.heureFermeture}h
+                Gratuit - entre {config.heureOuverture}h et {config.heureFermeture}h
               </p>
             </div>
 
@@ -467,7 +464,7 @@ function Checkout() {
             >
               <strong>Livraison samedi</strong>
               <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
-                +{PRIX_LIVRAISON.toFixed(2)} € — heure à convenir sur Instagram
+                +{PRIX_LIVRAISON.toFixed(2)} € - heure à convenir sur Instagram
               </p>
             </div>
           </div>
@@ -530,6 +527,12 @@ function Checkout() {
               </span>
             )}
           </p>
+
+          {message && (
+            <div style={styles.banniereErreur}>{message}</div>
+          )}
+
+
           <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={viderPanier} style={styles.boutonVider}>
               Vider le panier
