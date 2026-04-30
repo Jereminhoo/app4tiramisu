@@ -435,76 +435,120 @@ const sauvegarderConfig = async () => {
         )}
 
 
-      {/* ── ONGLET CONFIGURATION ── */}
-      {onglet === 'configuration' && (
-        <section className="category-section">
-          <h2 className="category-title">Configuration des horaires</h2>
+{/* ── ONGLET CONFIGURATION ── */}
+{onglet === 'configuration' && (
+  <section className="category-section">
+    <h2 className="category-title">Configuration</h2>
 
-          <div style={styles.formulaire}>
-            <p style={{ margin: '0 0 15px 0', fontSize: '0.9rem', color: '#666' }}>
-              Ces horaires s'appliquent aux retraits. 
-              En dehors de ces heures, les clients ne pourront pas valider une commande.
-            </p>
+    <div style={styles.formulaire}>
+      <p style={{ margin: '0 0 15px 0', fontSize: '0.9rem', color: '#666' }}>
+        Ces horaires s'appliquent aux retraits.
+        En dehors de ces heures, les clients ne pourront pas valider une commande.
+      </p>
 
-            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-              {/* Heure d'ouverture */}
-              <div style={{ flex: 1 }}>
-                <label style={styles.label}>Heure d'ouverture</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="23"
-                  value={config.heureOuverture}
-                  onChange={e => setConfig(prev => ({ ...prev, heureOuverture: e.target.value }))}
-                  style={styles.input}
-                />
-                <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '4px' }}>
-                  Ex: 15 pour 15h00
-                </p>
-              </div>
+      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+        {/* Heure d'ouverture */}
+        <div style={{ flex: 1 }}>
+          <label style={styles.label}>Heure d'ouverture</label>
+          <input
+            type="number"
+            min="0"
+            max="23"
+            value={config.heureOuverture}
+            onChange={e => setConfig(prev => ({ ...prev, heureOuverture: e.target.value }))}
+            style={styles.input}
+          />
+          <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '4px' }}>
+            Ex: 15 pour 15h00
+          </p>
+        </div>
 
-              {/* Heure de fermeture */}
-              <div style={{ flex: 1 }}>
-                <label style={styles.label}>Heure de fermeture</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="23"
-                  value={config.heureFermeture}
-                  onChange={e => setConfig(prev => ({ ...prev, heureFermeture: e.target.value }))}
-                  style={styles.input}
-                />
-                <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '4px' }}>
-                  Ex: 23 pour 23h00
-                </p>
-              </div>
-            </div>
+        {/* Heure de fermeture */}
+        <div style={{ flex: 1 }}>
+          <label style={styles.label}>Heure de fermeture</label>
+          <input
+            type="number"
+            min="0"
+            max="23"
+            value={config.heureFermeture}
+            onChange={e => setConfig(prev => ({ ...prev, heureFermeture: e.target.value }))}
+            style={styles.input}
+          />
+          <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '4px' }}>
+            Ex: 23 pour 23h00
+          </p>
+        </div>
+      </div>
 
-            <button onClick={sauvegarderConfig} style={styles.boutonValider}>
-              Sauvegarder
-            </button>
-          </div>
+      {/* Toggle livraison samedi */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        border: '1px solid #c8b49c',
+        borderRadius: '8px',
+        padding: '15px',
+      }}>
+        <div>
+          <strong style={{ color: '#3b2f2f' }}>Livraison samedi</strong>
+          <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
+            {config.livraisonSamediActive === 'true'
+              ? 'Disponible pour les clients'
+              : 'Désactivée pour les clients'}
+          </p>
+        </div>
+        {/*
+          Ce bouton toggle change la valeur entre 'true' et 'false'
+          On stocke en string car la table Config ne stocke que des strings
+        */}
+        <button
+          onClick={() => setConfig(prev => ({
+            ...prev,
+            livraisonSamediActive: prev.livraisonSamediActive === 'true' ? 'false' : 'true'
+          }))}
+          style={{
+            backgroundColor: config.livraisonSamediActive === 'true' ? '#27ae60' : '#c0392b',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            minWidth: '120px',
+          }}
+        >
+          {config.livraisonSamediActive === 'true' ? 'Active' : 'Inactive'}
+        </button>
+      </div>
 
-          {/* Aperçu des horaires actuels */}
-          <div style={{
-            marginTop: '20px',
-            backgroundColor: '#e6ffe6',
-            border: '1px solid #ccffcc',
-            borderRadius: '10px',
-            padding: '15px',
-            textAlign: 'center',
-          }}>
-            <p style={{ margin: 0, color: '#006600', fontWeight: 'bold' }}>
-              Horaires actuels : {config.heureOuverture}h00 - {config.heureFermeture}h00
-            </p>
-          </div>
-        </section>
-      )}
-      </main>
+      <button onClick={sauvegarderConfig} style={styles.boutonValider}>
+        Sauvegarder
+      </button>
     </div>
-  );
-}
 
+    {/* Aperçu des horaires actuels */}
+    <div style={{
+      marginTop: '20px',
+      backgroundColor: '#e6ffe6',
+      border: '1px solid #ccffcc',
+      borderRadius: '10px',
+      padding: '15px',
+      textAlign: 'center',
+    }}>
+      <p style={{ margin: 0, color: '#006600', fontWeight: 'bold' }}>
+        Horaires actuels : {config.heureOuverture}h00 - {config.heureFermeture}h00
+      </p>
+      <p style={{ margin: '8px 0 0 0', color: config.livraisonSamediActive === 'true' ? '#006600' : '#c0392b', fontWeight: 'bold' }}>
+        Livraison samedi : {config.livraisonSamediActive === 'true' ? 'Active' : 'Inactive'}
+      </p>
+    </div>
+  </section>
+)}
+</main>
+</div>
+);
+}
 // ─────────────────────────────────────────────
 // STYLES
 // ─────────────────────────────────────────────

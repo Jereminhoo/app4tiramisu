@@ -72,7 +72,6 @@
 /* Titre de chaque section (NOS DESSERTS, TAILLES...) */
 .category-title {
   font-family: var(--police-titre); /* Playfair Display ! */
-  border-bottom: 1px solid var(--couleur-marron-mid);
   padding-bottom: var(--espace-xs);
   text-transform: uppercase;
   letter-spacing: 1px;
