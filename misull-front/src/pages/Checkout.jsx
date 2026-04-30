@@ -403,9 +403,6 @@ function Checkout() {
           Aucune transaction d'argent n'a lieu sur ce site.
         </p>
 
-        {message && (
-          <div style={styles.banniereErreur}>{message}</div>
-        )}
 
         {/* Liste des articles */}
         <section className="category-section">
@@ -453,22 +450,36 @@ function Checkout() {
             >
               <strong>Retrait</strong>
               <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
-                Gratuit — entre {config.heureOuverture}h et {config.heureFermeture}h
+                Gratuit - entre {config.heureOuverture}h et {config.heureFermeture}h
               </p>
             </div>
 
+            {/*
+              Si livraisonSamediActive = 'false', la boîte est grisée et non cliquable.
+              On stocke en string dans Config donc on compare avec la string 'true'.
+            */}
             <div
-              onClick={() => setLivraisonSamedi(true)}
+              onClick={() => config.livraisonSamediActive === 'true' && setLivraisonSamedi(true)}
               style={{
                 ...styles.choixBox,
                 border: livraisonSamedi ? '2px solid #c0392b' : '2px solid #c8b49c',
-                backgroundColor: livraisonSamedi ? '#fdf0ee' : '#faf7f2',
+                backgroundColor: config.livraisonSamediActive !== 'true'
+                  ? '#f0f0f0'
+                  : livraisonSamedi ? '#fdf0ee' : '#faf7f2',
+                cursor: config.livraisonSamediActive === 'true' ? 'pointer' : 'not-allowed',
+                opacity: config.livraisonSamediActive === 'true' ? 1 : 0.6,
               }}
             >
               <strong>Livraison samedi</strong>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
-                +{PRIX_LIVRAISON.toFixed(2)} € — heure à convenir sur Instagram
-              </p>
+              {config.livraisonSamediActive !== 'true' ? (
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#c0392b', fontWeight: 'bold' }}>
+                  Indisponible pour le moment
+                </p>
+              ) : (
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
+                  +{PRIX_LIVRAISON.toFixed(2)} € - heure à convenir sur Instagram
+                </p>
+              )}
             </div>
           </div>
 
@@ -530,6 +541,12 @@ function Checkout() {
               </span>
             )}
           </p>
+
+          {message && (
+            <div style={styles.banniereErreur}>{message}</div>
+          )}
+
+
           <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={viderPanier} style={styles.boutonVider}>
               Vider le panier

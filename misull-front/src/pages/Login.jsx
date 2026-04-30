@@ -179,7 +179,7 @@ function Login() {
 
             {/* Indication des règles du mot de passe */}
             <p style={styles.aide}>
-              6 caractères minimum, sans espace.
+               6 caractères minimum, sans espace. Utilise un mot de passe unique, différent de tes autres comptes.
             </p>
           </div>
         )}
