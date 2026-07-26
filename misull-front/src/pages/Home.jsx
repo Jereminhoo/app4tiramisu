@@ -40,7 +40,7 @@ function Home() {
       {/* ── EN-TÊTE ── */}
       <header className="header">
         <img src="/logo.jpg" alt="Logo Misull" className="logo" />
-        <p className="subtitle">Tiramisus et Tira-crêpes fait maison</p>
+        <p className="subtitle">Tiramisus et Tira-crêpes faits maison</p>
         <p style={styles.ville}>La Louvière</p>
       </header>
 
@@ -133,7 +133,7 @@ function Home() {
             </div>
             <div className="info-box">
               <strong>Livraison</strong>
-              <p>Retrait gratuit. Livraison le samedi : +2,50 €.</p>
+              <p>Retrait gratuit. Livraison disponible tous les jours : +2,50 €.</p>
             </div>
             <div className="info-box">
               <strong>Paiement</strong>
@@ -147,8 +147,8 @@ function Home() {
           <p style={styles.instaTexte}>
             Envie de voir plus de photos et vidéos ?
           </p>
-          <a
-            href="https://www.instagram.com/misulalouviere"
+          
+            <a href="https://www.instagram.com/misulalouviere"
             target="_blank"
             rel="noopener noreferrer"
             style={styles.instaLien}

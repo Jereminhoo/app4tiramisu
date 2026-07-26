@@ -105,9 +105,9 @@ function MesCommandes() {
                       Retrait prévu le {formaterDate(commande.dateRetrait)}
                     </p>
                   )}
-                  {commande.livraisonSamedi && (
+                  {commande.livraison && (
                     <p style={{ ...styles.date, color: '#c0392b' }}>
-                      Livraison samedi demandée
+                      Livraison demandée
                     </p>
                   )}
                 </div>

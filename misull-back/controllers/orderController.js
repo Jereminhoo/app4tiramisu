@@ -5,8 +5,8 @@ const telegramService = require('../services/telegramService');
 const createOrder = async (req, res) => {
   try {
     const id_utilisateur = req.utilisateur.id;
-    // On récupère aussi dateRetrait et livraisonSamedi envoyés par le frontend
-    const { prixTotal, lignes, dateRetrait, livraisonSamedi } = req.body;
+    // On récupère aussi dateRetrait et livraison envoyés par le frontend
+    const { prixTotal, lignes, dateRetrait, livraison } = req.body;
 
     if (!prixTotal || !lignes || lignes.length === 0) {
       return res.status(400).json({ message: "Données de commande incomplètes." });
@@ -17,7 +17,7 @@ const createOrder = async (req, res) => {
       prixTotal,
       lignes,
       dateRetrait,
-      livraisonSamedi
+      livraison
     );
 
     // Notification Telegram après sauvegarde
@@ -27,9 +27,17 @@ const createOrder = async (req, res) => {
 
   } catch (error) {
     console.error("Erreur création commande :", error);
-    res.status(500).json({ message: "Erreur lors de la validation de la commande." });
+    // Si l'erreur vient de notre vérification de créneau (collision), elle a
+    // un statusCode défini (409 Conflict). Sinon, c'est une vraie panne
+    // serveur inattendue → on renvoie un 500 générique.
+    const statusCode = error.statusCode || 500;
+    const message = error.statusCode
+      ? error.message
+      : "Erreur lors de la validation de la commande.";
+    res.status(statusCode).json({ message });
   }
 };
+
 
 const getHistorique = async (req, res) => {
   try {
@@ -63,4 +71,23 @@ const getStatut = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, getHistorique, annulerCommande, getStatut };
+// GET /api/orders/creneaux?date=2026-08-02
+// Renvoie la liste des créneaux de livraison disponibles pour une date donnée
+const getCreneaux = async (req, res) => {
+  try {
+    const { date } = req.query;
+
+    // On vérifie qu'une date a bien été fournie
+    if (!date) {
+      return res.status(400).json({ message: "La date est requise." });
+    }
+
+    const creneaux = await orderService.getCreneauxDisponibles(date);
+    res.json({ creneaux });
+  } catch (error) {
+    console.error("Erreur récupération créneaux :", error);
+    res.status(500).json({ message: "Erreur lors de la récupération des créneaux." });
+  }
+};
+
+module.exports = { createOrder, getHistorique, annulerCommande, getStatut, getCreneaux };

@@ -1,6 +1,6 @@
 // src/pages/Checkout.jsx
 // Page panier + validation de commande.
-// Gère : choix date de retrait, livraison samedi, validation horaires config, polling statut.
+// Gère : choix date de retrait, livraison, validation horaires config, polling statut.
 
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -23,8 +23,8 @@ function Checkout() {
   const [config, setConfig] = useState({ heureOuverture: '15', heureFermeture: '23' });
 
   // ── Option livraison ──
-  // false = retrait, true = livraison samedi
-  const [livraisonSamedi, setLivraisonSamedi] = useState(false);
+  // false = retrait, true = livraison (n'importe quel jour)
+  const [livraison, setLivraison] = useState(false);
   const PRIX_LIVRAISON = 2.50;
 
   // ── Date minimum : maintenant + 24h ──
@@ -40,7 +40,7 @@ function Checkout() {
     return `${annee}-${mois}-${jour}T${heures}:${minutes}`;
   };
 
-  // Pour la livraison samedi on n'a besoin que de la date (pas l'heure)
+  // Pour la livraison on n'a besoin que de la date (pas l'heure exacte pour l'instant)
   const formatDate = (date) => {
     const annee = date.getFullYear();
     const mois = String(date.getMonth() + 1).padStart(2, '0');
@@ -113,7 +113,7 @@ function Checkout() {
   // ── Calcul du total panier ──
   const calculerTotal = () => {
     const totalArticles = panier.reduce((total, ligne) => total + ligne.prix, 0);
-    const totalFinal = livraisonSamedi ? totalArticles + PRIX_LIVRAISON : totalArticles;
+    const totalFinal = livraison ? totalArticles + PRIX_LIVRAISON : totalArticles;
     return totalFinal.toFixed(2);
   };
 
@@ -129,13 +129,14 @@ function Checkout() {
 
     let dateFinale;
 
-    if (livraisonSamedi) {
-      // ── Validation livraison samedi ──
+    if (livraison) {
+      // ── Validation livraison ──
+      // la livraison est maintenant possible n'importe quel jour de la semaine.
       const dateChoisie = new Date(dateLivraison);
 
       // Vérifier délai minimum 24h
-      // Pour la livraison samedi, on compare juste les dates (pas les heures)
-      // car l'heure sera convenue sur Instagram
+      // On compare juste les dates (pas les heures) car l'heure sera
+      // convenue sur Instagram pour le moment
       const dateMiniSansHeure = new Date(dateMiniDate);
       dateMiniSansHeure.setHours(0, 0, 0, 0);
       if (dateChoisie < dateMiniSansHeure) {
@@ -143,14 +144,7 @@ function Checkout() {
         return;
       }
 
-      // getDay() : 0=dimanche, 1=lundi, ..., 6=samedi
-      if (dateChoisie.getDay() !== 6) {
-        setMessage('La livraison est uniquement disponible le samedi.');
-        return;
-      }
-
-      // Pour la livraison samedi, on met midi par défaut
-      // L'heure exacte sera convenue sur Instagram
+      // On met midi par défaut — l'heure exacte sera convenue sur Instagram
       dateChoisie.setHours(12, 0, 0, 0);
       dateFinale = dateChoisie;
 
@@ -180,7 +174,7 @@ function Checkout() {
     try {
       const body = {
         prixTotal: parseFloat(calculerTotal()),
-        livraisonSamedi,
+        livraison,
         dateRetrait: dateFinale.toISOString(),
         lignes: panier.map(ligne => ({
           id_tiramisu: ligne.id_tiramisu,
@@ -255,13 +249,13 @@ function Checkout() {
 
           {/* Où récupérer / livraison */}
           <div style={styles.banniereRetrait}>
-            {commandeValidee.livraisonSamedi ? (
+            {commandeValidee.livraison ? (
               <>
-                <strong>Livraison samedi</strong>
+                <strong>Livraison</strong>
                 <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem' }}>
                   Contacte-nous sur Instagram{' '}
-                  <a
-                    href="https://www.instagram.com/misulalouviere"
+                  
+                    <a href="https://www.instagram.com/misulalouviere"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: '#c0392b', fontWeight: 'bold' }}
@@ -278,8 +272,8 @@ function Checkout() {
                 <strong>Où récupérer ta commande ?</strong>
                 <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem' }}>
                   Contacte-nous sur Instagram{' '}
-                  <a
-                    href="https://www.instagram.com/misulalouviere"
+                  
+                    <a href="https://www.instagram.com/misulalouviere"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: '#c0392b', fontWeight: 'bold' }}
@@ -434,18 +428,18 @@ function Checkout() {
           ))}
         </section>
 
-        {/* ── Choix : retrait ou livraison samedi ── */}
+        {/* ── Choix : retrait ou livraison ── */}
         <section className="category-section">
           <h2 className="category-title">Mode de récupération</h2>
 
           {/* Boutons radio visuels pour choisir */}
           <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '20px' }}>
             <div
-              onClick={() => setLivraisonSamedi(false)}
+              onClick={() => setLivraison(false)}
               style={{
                 ...styles.choixBox,
-                border: !livraisonSamedi ? '2px solid #c0392b' : '2px solid #c8b49c',
-                backgroundColor: !livraisonSamedi ? '#fdf0ee' : '#faf7f2',
+                border: !livraison ? '2px solid #c0392b' : '2px solid #c8b49c',
+                backgroundColor: !livraison ? '#fdf0ee' : '#faf7f2',
               }}
             >
               <strong>Retrait</strong>
@@ -455,23 +449,23 @@ function Checkout() {
             </div>
 
             {/*
-              Si livraisonSamediActive = 'false', la boîte est grisée et non cliquable.
+              Si livraisonActive = 'false', la boîte est grisée et non cliquable.
               On stocke en string dans Config donc on compare avec la string 'true'.
             */}
             <div
-              onClick={() => config.livraisonSamediActive === 'true' && setLivraisonSamedi(true)}
+              onClick={() => config.livraisonActive === 'true' && setLivraison(true)}
               style={{
                 ...styles.choixBox,
-                border: livraisonSamedi ? '2px solid #c0392b' : '2px solid #c8b49c',
-                backgroundColor: config.livraisonSamediActive !== 'true'
+                border: livraison ? '2px solid #c0392b' : '2px solid #c8b49c',
+                backgroundColor: config.livraisonActive !== 'true'
                   ? '#f0f0f0'
-                  : livraisonSamedi ? '#fdf0ee' : '#faf7f2',
-                cursor: config.livraisonSamediActive === 'true' ? 'pointer' : 'not-allowed',
-                opacity: config.livraisonSamediActive === 'true' ? 1 : 0.6,
+                  : livraison ? '#fdf0ee' : '#faf7f2',
+                cursor: config.livraisonActive === 'true' ? 'pointer' : 'not-allowed',
+                opacity: config.livraisonActive === 'true' ? 1 : 0.6,
               }}
             >
-              <strong>Livraison samedi</strong>
-              {config.livraisonSamediActive !== 'true' ? (
+              <strong>Livraison</strong>
+              {config.livraisonActive !== 'true' ? (
                 <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#c0392b', fontWeight: 'bold' }}>
                   Indisponible pour le moment
                 </p>
@@ -484,7 +478,7 @@ function Checkout() {
           </div>
 
           {/* Sélecteur de date selon le mode choisi */}
-          {!livraisonSamedi ? (
+          {!livraison ? (
             <div>
               <label style={styles.label}>
                 Quand veux-tu venir chercher ta commande ?
@@ -503,7 +497,7 @@ function Checkout() {
           ) : (
             <div>
               <label style={styles.label}>
-                Quel samedi veux-tu être livré ?
+                Quel jour veux-tu être livré ?
               </label>
               <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '8px' }}>
                 Minimum 24h après la commande. L'heure sera convenue sur Instagram.
@@ -517,8 +511,8 @@ function Checkout() {
               />
               <div style={styles.banniereInfo}>
                 Contacte-nous sur{' '}
-                <a
-                  href="https://www.instagram.com/misulalouviere"
+                
+                  <a href="https://www.instagram.com/misulalouviere"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: '#c0392b', fontWeight: 'bold' }}
@@ -535,7 +529,7 @@ function Checkout() {
         <section className="category-section" style={{ textAlign: 'center' }}>
           <p style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#3b2f2f' }}>
             Total : <span style={{ color: '#c0392b' }}>{calculerTotal()} €</span>
-            {livraisonSamedi && (
+            {livraison && (
               <span style={{ fontSize: '0.85rem', color: '#888', display: 'block', marginTop: '4px' }}>
                 dont {PRIX_LIVRAISON.toFixed(2)} € de livraison
               </span>

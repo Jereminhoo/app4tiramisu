@@ -1,6 +1,6 @@
 // src/pages/Admin.jsx
 // Page d'administration — accessible uniquement aux utilisateurs avec le rôle ADMIN.
-// Divisée en 3 onglets : Commandes, Utilisateurs, Catalogue.
+// Divisée en 4 onglets : Commandes, Utilisateurs, Catalogue, Configuration.
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -25,7 +25,7 @@ function Admin() {
   const [tiramisuEnEdition, setTiramisuEnEdition] = useState(null); // null = mode ajout
 
   // État pour la configuration des horaires
-const [config, setConfig] = useState({ heureOuverture: '15', heureFermeture: '23' });
+  const [config, setConfig] = useState({ heureOuverture: '15', heureFermeture: '23' });
   // Messages
   const [message, setMessage] = useState('');
 
@@ -68,22 +68,22 @@ const [config, setConfig] = useState({ heureOuverture: '15', heureFermeture: '23
   };
 
   // Charge la configuration depuis l'API
-const chargerConfig = async () => {
-  try {
-    const rep = await api.get('/api/config');
-    setConfig(rep.data.config);
-  } catch (e) { console.error(e); }
-};
+  const chargerConfig = async () => {
+    try {
+      const rep = await api.get('/api/config');
+      setConfig(rep.data.config);
+    } catch (e) { console.error(e); }
+  };
 
-// Sauvegarde la configuration
-const sauvegarderConfig = async () => {
-  try {
-    await api.put('/api/config', config);
-    afficherMessage('Configuration sauvegardée !');
-  } catch (e) {
-    afficherMessage(e.response?.data?.message || 'Erreur.', true);
-  }
-};
+  // Sauvegarde la configuration
+  const sauvegarderConfig = async () => {
+    try {
+      await api.put('/api/config', config);
+      afficherMessage('Configuration sauvegardée !');
+    } catch (e) {
+      afficherMessage(e.response?.data?.message || 'Erreur.', true);
+    }
+  };
 
   // ─────────────────────────────────────────────
   // ACTIONS COMMANDES
@@ -435,120 +435,121 @@ const sauvegarderConfig = async () => {
         )}
 
 
-{/* ── ONGLET CONFIGURATION ── */}
-{onglet === 'configuration' && (
-  <section className="category-section">
-    <h2 className="category-title">Configuration</h2>
+        {/* ── ONGLET CONFIGURATION ── */}
+        {onglet === 'configuration' && (
+          <section className="category-section">
+            <h2 className="category-title">Configuration</h2>
 
-    <div style={styles.formulaire}>
-      <p style={{ margin: '0 0 15px 0', fontSize: '0.9rem', color: '#666' }}>
-        Ces horaires s'appliquent aux retraits.
-        En dehors de ces heures, les clients ne pourront pas valider une commande.
-      </p>
+            <div style={styles.formulaire}>
+              <p style={{ margin: '0 0 15px 0', fontSize: '0.9rem', color: '#666' }}>
+                Ces horaires s'appliquent aux retraits.
+                En dehors de ces heures, les clients ne pourront pas valider une commande.
+              </p>
 
-      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-        {/* Heure d'ouverture */}
-        <div style={{ flex: 1 }}>
-          <label style={styles.label}>Heure d'ouverture</label>
-          <input
-            type="number"
-            min="0"
-            max="23"
-            value={config.heureOuverture}
-            onChange={e => setConfig(prev => ({ ...prev, heureOuverture: e.target.value }))}
-            style={styles.input}
-          />
-          <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '4px' }}>
-            Ex: 15 pour 15h00
-          </p>
-        </div>
+              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                {/* Heure d'ouverture */}
+                <div style={{ flex: 1 }}>
+                  <label style={styles.label}>Heure d'ouverture</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="23"
+                    value={config.heureOuverture}
+                    onChange={e => setConfig(prev => ({ ...prev, heureOuverture: e.target.value }))}
+                    style={styles.input}
+                  />
+                  <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '4px' }}>
+                    Ex: 15 pour 15h00
+                  </p>
+                </div>
 
-        {/* Heure de fermeture */}
-        <div style={{ flex: 1 }}>
-          <label style={styles.label}>Heure de fermeture</label>
-          <input
-            type="number"
-            min="0"
-            max="23"
-            value={config.heureFermeture}
-            onChange={e => setConfig(prev => ({ ...prev, heureFermeture: e.target.value }))}
-            style={styles.input}
-          />
-          <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '4px' }}>
-            Ex: 23 pour 23h00
-          </p>
-        </div>
-      </div>
+                {/* Heure de fermeture */}
+                <div style={{ flex: 1 }}>
+                  <label style={styles.label}>Heure de fermeture</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="23"
+                    value={config.heureFermeture}
+                    onChange={e => setConfig(prev => ({ ...prev, heureFermeture: e.target.value }))}
+                    style={styles.input}
+                  />
+                  <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '4px' }}>
+                    Ex: 23 pour 23h00
+                  </p>
+                </div>
+              </div>
 
-      {/* Toggle livraison samedi */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: 'white',
-        border: '1px solid #c8b49c',
-        borderRadius: '8px',
-        padding: '15px',
-      }}>
-        <div>
-          <strong style={{ color: '#3b2f2f' }}>Livraison samedi</strong>
-          <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
-            {config.livraisonSamediActive === 'true'
-              ? 'Disponible pour les clients'
-              : 'Désactivée pour les clients'}
-          </p>
-        </div>
-        {/*
-          Ce bouton toggle change la valeur entre 'true' et 'false'
-          On stocke en string car la table Config ne stocke que des strings
-        */}
-        <button
-          onClick={() => setConfig(prev => ({
-            ...prev,
-            livraisonSamediActive: prev.livraisonSamediActive === 'true' ? 'false' : 'true'
-          }))}
-          style={{
-            backgroundColor: config.livraisonSamediActive === 'true' ? '#27ae60' : '#c0392b',
-            color: 'white',
-            border: 'none',
-            padding: '10px 20px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            minWidth: '120px',
-          }}
-        >
-          {config.livraisonSamediActive === 'true' ? 'Active' : 'Inactive'}
-        </button>
-      </div>
+              {/* Toggle livraison — la livraison */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: 'white',
+                border: '1px solid #c8b49c',
+                borderRadius: '8px',
+                padding: '15px',
+              }}>
+                <div>
+                  <strong style={{ color: '#3b2f2f' }}>Livraison</strong>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
+                    {config.livraisonActive === 'true'
+                      ? 'Disponible pour les clients'
+                      : 'Désactivée pour les clients'}
+                  </p>
+                </div>
+                {/*
+                  Ce bouton toggle change la valeur entre 'true' et 'false'
+                  On stocke en string car la table Config ne stocke que des strings
+                */}
+                <button
+                  onClick={() => setConfig(prev => ({
+                    ...prev,
+                    livraisonActive: prev.livraisonActive === 'true' ? 'false' : 'true'
+                  }))}
+                  style={{
+                    backgroundColor: config.livraisonActive === 'true' ? '#27ae60' : '#c0392b',
+                    color: 'white',
+                    border: 'none',
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    minWidth: '120px',
+                  }}
+                >
+                  {config.livraisonActive === 'true' ? 'Active' : 'Inactive'}
+                </button>
+              </div>
 
-      <button onClick={sauvegarderConfig} style={styles.boutonValider}>
-        Sauvegarder
-      </button>
+              <button onClick={sauvegarderConfig} style={styles.boutonValider}>
+                Sauvegarder
+              </button>
+            </div>
+
+            {/* Aperçu des horaires actuels */}
+            <div style={{
+              marginTop: '20px',
+              backgroundColor: '#e6ffe6',
+              border: '1px solid #ccffcc',
+              borderRadius: '10px',
+              padding: '15px',
+              textAlign: 'center',
+            }}>
+              <p style={{ margin: 0, color: '#006600', fontWeight: 'bold' }}>
+                Horaires actuels : {config.heureOuverture}h00 - {config.heureFermeture}h00
+              </p>
+              <p style={{ margin: '8px 0 0 0', color: config.livraisonActive === 'true' ? '#006600' : '#c0392b', fontWeight: 'bold' }}>
+                Livraison : {config.livraisonActive === 'true' ? 'Active' : 'Inactive'}
+              </p>
+            </div>
+          </section>
+        )}
+      </main>
     </div>
-
-    {/* Aperçu des horaires actuels */}
-    <div style={{
-      marginTop: '20px',
-      backgroundColor: '#e6ffe6',
-      border: '1px solid #ccffcc',
-      borderRadius: '10px',
-      padding: '15px',
-      textAlign: 'center',
-    }}>
-      <p style={{ margin: 0, color: '#006600', fontWeight: 'bold' }}>
-        Horaires actuels : {config.heureOuverture}h00 - {config.heureFermeture}h00
-      </p>
-      <p style={{ margin: '8px 0 0 0', color: config.livraisonSamediActive === 'true' ? '#006600' : '#c0392b', fontWeight: 'bold' }}>
-        Livraison samedi : {config.livraisonSamediActive === 'true' ? 'Active' : 'Inactive'}
-      </p>
-    </div>
-  </section>
-)}
-</main>
-</div>
-);
+  );
 }
+
 // ─────────────────────────────────────────────
 // STYLES
 // ─────────────────────────────────────────────
@@ -650,12 +651,12 @@ const styles = {
     fontSize: '0.85rem',
   },
   label: {
-  display: 'block',
-  marginBottom: '6px',
-  fontWeight: 'bold',
-  color: '#3b2f2f',
-  fontSize: '0.9rem',
-},
+    display: 'block',
+    marginBottom: '6px',
+    fontWeight: 'bold',
+    color: '#3b2f2f',
+    fontSize: '0.9rem',
+  },
 };
 
 export default Admin;

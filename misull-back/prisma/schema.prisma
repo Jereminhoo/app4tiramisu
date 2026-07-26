@@ -55,7 +55,7 @@ model Commande {
   id_utilisateur Int
   dateCreation   DateTime        @default(now())
   dateRetrait    DateTime?
-  livraisonSamedi Boolean       @default(false)
+  livraison Boolean       @default(false)
   statut         String          @default("EN_ATTENTE")
   prixTotal      Float
   // Code court unique remis au client pour récupérer sa commande

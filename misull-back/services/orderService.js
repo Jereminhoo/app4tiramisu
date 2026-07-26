@@ -74,8 +74,35 @@ const genererCodeRetrait = () => {
 };
 
 // Crée une commande avec date de retrait et option livraison
-const createOrder = async (id_utilisateur, prixTotal, lignes, dateRetrait, livraisonSamedi) => {
+const createOrder = async (id_utilisateur, prixTotal, lignes, dateRetrait, livraison) => {
   return await prisma.$transaction(async (tx) => {
+
+    // Sécurité anti-collision : si c'est une livraison , on revérifie
+    // que le créneau est toujours libre au moment exact de la validation.
+    // Ça empêche deux clients de réserver le même créneau s'ils valident
+    // leur commande en même temps (le frontend affichait peut-être encore
+    // "disponible" avant que l'autre client ait fini de commander).
+    if (livraison && dateRetrait) {
+      const dateChoisie = new Date(dateRetrait);
+      const commandeExistante = await tx.commande.findFirst({
+        where: {
+          livraison: true,
+          statut: { not: 'ANNULEE' },
+          dateRetrait: dateChoisie, // même date ET même heure exacte
+        },
+      });
+
+      if (commandeExistante) {
+        // On attache un code HTTP 409 (Conflict) à l'erreur.
+        // 409 = code standard pour "l'état actuel de la ressource
+        // empêche l'opération demandée" — parfait pour ce cas précis.
+        const erreur = new Error(
+          "Ce créneau vient d'être réservé par quelqu'un d'autre. Merci d'en choisir un autre."
+        );
+        erreur.statusCode = 409;
+        throw erreur;
+      }
+    }
 
     // On génère un code unique — on réessaie si collision (très rare)
     let codeRetrait;
@@ -92,7 +119,7 @@ const createOrder = async (id_utilisateur, prixTotal, lignes, dateRetrait, livra
         id_utilisateur,
         prixTotal,
         dateRetrait: dateRetrait ? new Date(dateRetrait) : null,
-        livraisonSamedi: livraisonSamedi || false,
+        livraison: livraison || false,
         codeRetrait, // Code unique généré automatiquement
         lignes: {
           create: lignes.map((ligne) => ({
@@ -121,4 +148,75 @@ const createOrder = async (id_utilisateur, prixTotal, lignes, dateRetrait, livra
   });
 };
 
-module.exports = { createOrder, getHistorique, annulerCommande, getStatut, genererCodeRetrait };
+// Génère la liste des créneaux de livraison pour une date donnée
+// et indique lesquels sont déjà pris par une commande existante.
+// Retourne un tableau du style :
+// [{ heureDebut: "18:00", heureFin: "18:20", disponible: true }, ...]
+const getCreneauxDisponibles = async (dateString) => {
+  // On récupère la config actuelle (plage horaire + durée des créneaux)
+  const configService = require('./configService');
+  const config = await configService.getConfig();
+
+  const heureDebut = parseInt(config.livraisonHeureDebut);
+  const heureFin = parseInt(config.livraisonHeureFin);
+  const dureeCreneau = parseInt(config.livraisonDureeCreneau);
+
+  // Bornes de la journée choisie, pour aller chercher les commandes de CE jour-là
+  // Ex: si dateString = "2026-08-02", on veut tout ce qui est entre
+  // 2026-08-02 00:00:00 et 2026-08-02 23:59:59
+  const debutJournee = new Date(dateString);
+  debutJournee.setHours(0, 0, 0, 0);
+  const finJournee = new Date(dateString);
+  finJournee.setHours(23, 59, 59, 999);
+
+  // On récupère toutes les commandes de livraison déjà validées ce jour-là
+  // (on exclut les commandes annulées, elles libèrent leur créneau)
+  const commandesExistantes = await prisma.commande.findMany({
+    where: {
+      livraison: true,
+      statut: { not: 'ANNULEE' },
+      dateRetrait: {
+        gte: debutJournee,
+        lte: finJournee,
+      },
+    },
+    select: { dateRetrait: true },
+  });
+
+  // On transforme les dates des commandes existantes en simples horaires "HH:MM"
+  // pour pouvoir comparer facilement avec les créneaux générés
+  const heuresPrises = commandesExistantes.map((commande) => {
+    const d = new Date(commande.dateRetrait);
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  });
+
+  // Génération des créneaux entre heureDebut et heureFin, par pas de dureeCreneau minutes
+  const creneaux = [];
+  let minutesCourantes = heureDebut * 60; // on travaille en minutes depuis minuit
+  const minutesFin = heureFin * 60;
+
+  while (minutesCourantes < minutesFin) {
+    const debutH = Math.floor(minutesCourantes / 60);
+    const debutM = minutesCourantes % 60;
+    const finCreneauMinutes = minutesCourantes + dureeCreneau;
+    const finH = Math.floor(finCreneauMinutes / 60);
+    const finM = finCreneauMinutes % 60;
+
+    const heureDebutStr = `${String(debutH).padStart(2, '0')}:${String(debutM).padStart(2, '0')}`;
+    const heureFinStr = `${String(finH).padStart(2, '0')}:${String(finM).padStart(2, '0')}`;
+
+    creneaux.push({
+      heureDebut: heureDebutStr,
+      heureFin: heureFinStr,
+      // Un créneau est disponible seulement si aucune commande n'a déjà cette heure de début
+      disponible: !heuresPrises.includes(heureDebutStr),
+    });
+
+    minutesCourantes += dureeCreneau;
+  }
+
+  return creneaux;
+};
+module.exports = { createOrder, getHistorique, annulerCommande, getStatut, genererCodeRetrait, getCreneauxDisponibles };
