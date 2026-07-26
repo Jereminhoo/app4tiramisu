@@ -25,8 +25,15 @@ function Admin() {
   const [tiramisuEnEdition, setTiramisuEnEdition] = useState(null); // null = mode ajout
 
   // État pour la configuration des horaires
-  const [config, setConfig] = useState({ heureOuverture: '15', heureFermeture: '23' });
-  // Messages
+const [config, setConfig] = useState({
+    heureOuverture: '15',
+    heureFermeture: '23',
+    livraisonActive: 'false',
+    livraisonHeureDebut: '18',
+    livraisonHeureFin: '22',
+    livraisonDureeCreneau: '20',
+    delaiMaxJours: '7',
+  });  // Messages
   const [message, setMessage] = useState('');
 
   // ─────────────────────────────────────────────
@@ -520,6 +527,86 @@ function Admin() {
                 >
                   {config.livraisonActive === 'true' ? 'Active' : 'Inactive'}
                 </button>
+                </div>
+                {/* Paramètres des créneaux de livraison — visibles seulement si la livraison est active */}
+              {config.livraisonActive === 'true' && (
+                <div style={{
+                  backgroundColor: 'white',
+                  border: '1px solid #c8b49c',
+                  borderRadius: '8px',
+                  padding: '15px',
+                }}>
+                  <strong style={{ color: '#3b2f2f', display: 'block', marginBottom: '12px' }}>
+                    Créneaux de livraison
+                  </strong>
+
+                  <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                    {/* Heure de début de la plage de livraison */}
+                    <div style={{ flex: 1, minWidth: '120px' }}>
+                      <label style={styles.label}>Début</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="23"
+                        value={config.livraisonHeureDebut}
+                        onChange={e => setConfig(prev => ({ ...prev, livraisonHeureDebut: e.target.value }))}
+                        style={styles.input}
+                      />
+                    </div>
+
+                    {/* Heure de fin de la plage de livraison */}
+                    <div style={{ flex: 1, minWidth: '120px' }}>
+                      <label style={styles.label}>Fin</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="23"
+                        value={config.livraisonHeureFin}
+                        onChange={e => setConfig(prev => ({ ...prev, livraisonHeureFin: e.target.value }))}
+                        style={styles.input}
+                      />
+                    </div>
+
+                    {/* Durée d'un créneau en minutes */}
+                    <div style={{ flex: 1, minWidth: '120px' }}>
+                      <label style={styles.label}>Durée créneau (min)</label>
+                      <input
+                        type="number"
+                        min="5"
+                        max="120"
+                        step="5"
+                        value={config.livraisonDureeCreneau}
+                        onChange={e => setConfig(prev => ({ ...prev, livraisonDureeCreneau: e.target.value }))}
+                        style={styles.input}
+                      />
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '8px' }}>
+                    Ex: Début 18, Fin 22, Durée 20 → génère des créneaux de 18h00 à 21h40, par tranches de 20 minutes.
+                  </p>
+                </div>
+              )}
+
+              {/* Fenêtre de réservation maximale — s'applique au retrait ET à la livraison */}
+              <div style={{
+                backgroundColor: 'white',
+                border: '1px solid #c8b49c',
+                borderRadius: '8px',
+                padding: '15px',
+              }}>
+                <label style={styles.label}>Réservation possible jusqu'à (jours à l'avance)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={config.delaiMaxJours}
+                  onChange={e => setConfig(prev => ({ ...prev, delaiMaxJours: e.target.value }))}
+                  style={styles.input}
+                />
+                <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '4px' }}>
+                  Ex: 7 → un client ne peut pas choisir une date au-delà de 7 jours à partir d'aujourd'hui.
+                </p>
               </div>
 
               <button onClick={sauvegarderConfig} style={styles.boutonValider}>
