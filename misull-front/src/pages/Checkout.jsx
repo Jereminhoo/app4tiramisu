@@ -1,6 +1,6 @@
 // src/pages/Checkout.jsx
 // Page panier + validation de commande.
-// Gère : choix date de retrait, livraison, validation horaires config, polling statut.
+// Gère : choix date de retrait, livraison avec créneaux, validation horaires config, polling statut.
 
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -19,17 +19,40 @@ function Checkout() {
   const [statutActuel, setStatutActuel] = useState(commandeValidee?.statut || null);
   const [demandeConfirmation, setDemandeConfirmation] = useState(false);
 
-  // ── Config des horaires chargée depuis l'API ──
-  const [config, setConfig] = useState({ heureOuverture: '15', heureFermeture: '23' });
+  // ── Config chargée depuis l'API ──
+  // heureOuverture/heureFermeture : horaires de retrait
+  // delaiMaxJours : nombre de jours max à l'avance qu'un client peut réserver
+  // IMPORTANT : une seule déclaration de ce state dans tout le composant.
+  // En avoir deux (comme c'était le cas avant) fait planter React au chargement.
+  const [config, setConfig] = useState({
+    heureOuverture: '15',
+    heureFermeture: '23',
+    delaiMaxJours: '7',
+  });
 
   // ── Option livraison ──
   // false = retrait, true = livraison (n'importe quel jour)
   const [livraison, setLivraison] = useState(false);
   const PRIX_LIVRAISON = 2.50;
 
+  // ── Créneaux de livraison ──
+  // Liste des créneaux disponibles pour la date choisie, ex:
+  // [{ heureDebut: "18:00", heureFin: "18:20", disponible: true }, ...]
+  const [creneaux, setCreneaux] = useState([]);
+  const [creneauSelectionne, setCreneauSelectionne] = useState(null);
+  const [chargementCreneaux, setChargementCreneaux] = useState(false);
+
   // ── Date minimum : maintenant + 24h ──
   const maintenant = new Date();
   const dateMiniDate = new Date(maintenant.getTime() + 24 * 60 * 60 * 1000);
+
+  // ── Date maximum : maintenant + delaiMaxJours (valeur configurable par l'admin) ──
+  // Empêche de réserver trop loin dans le temps, au-delà de la période
+  // pour laquelle les disponibilités (horaires, créneaux) ont un sens.
+  const dateMaxDate = new Date(
+    maintenant.getTime() + parseInt(config.delaiMaxJours) * 24 * 60 * 60 * 1000
+  );
+  dateMaxDate.setHours(23, 59, 59, 999); // on autorise jusqu'à la fin de la dernière journée
 
   const formatDatetimeLocal = (date) => {
     const annee = date.getFullYear();
@@ -40,7 +63,7 @@ function Checkout() {
     return `${annee}-${mois}-${jour}T${heures}:${minutes}`;
   };
 
-  // Pour la livraison on n'a besoin que de la date (pas l'heure exacte pour l'instant)
+  // Pour la livraison on n'a besoin que de la date, l'heure vient du créneau choisi
   const formatDate = (date) => {
     const annee = date.getFullYear();
     const mois = String(date.getMonth() + 1).padStart(2, '0');
@@ -50,6 +73,12 @@ function Checkout() {
 
   const dateMiniString = formatDatetimeLocal(dateMiniDate);
   const dateMiniDateString = formatDate(dateMiniDate);
+
+  // Bornes maximum, au même format que les bornes minimum ci-dessus.
+  // dateMaxString (avec l'heure) sert au retrait -> type="datetime-local"
+  // dateMaxDateString (date seule) sert à la livraison -> type="date"
+  const dateMaxString = formatDatetimeLocal(dateMaxDate);
+  const dateMaxDateString = formatDate(dateMaxDate);
 
   const [dateRetrait, setDateRetrait] = useState(dateMiniString);
   const [dateLivraison, setDateLivraison] = useState(dateMiniDateString);
@@ -64,6 +93,24 @@ function Checkout() {
       .then(rep => setConfig(rep.data.config))
       .catch(e => console.error('Erreur config :', e));
   }, []);
+
+  // ── Chargement des créneaux disponibles ──
+  // Se déclenche à chaque fois que le mode "livraison" est actif
+  // et que la date choisie change.
+  useEffect(() => {
+    if (!livraison || !dateLivraison) return;
+
+    setChargementCreneaux(true);
+    setCreneauSelectionne(null); // on réinitialise le choix si la date change
+
+    api.get(`/api/orders/creneaux?date=${dateLivraison}`)
+      .then(rep => setCreneaux(rep.data.creneaux))
+      .catch(e => {
+        console.error('Erreur chargement créneaux :', e);
+        setCreneaux([]);
+      })
+      .finally(() => setChargementCreneaux(false));
+  }, [livraison, dateLivraison]);
 
   // ── Chrono + Polling du statut toutes les 10 secondes ──
   useEffect(() => {
@@ -131,12 +178,9 @@ function Checkout() {
 
     if (livraison) {
       // ── Validation livraison ──
-      // la livraison est maintenant possible n'importe quel jour de la semaine.
       const dateChoisie = new Date(dateLivraison);
 
       // Vérifier délai minimum 24h
-      // On compare juste les dates (pas les heures) car l'heure sera
-      // convenue sur Instagram pour le moment
       const dateMiniSansHeure = new Date(dateMiniDate);
       dateMiniSansHeure.setHours(0, 0, 0, 0);
       if (dateChoisie < dateMiniSansHeure) {
@@ -144,8 +188,16 @@ function Checkout() {
         return;
       }
 
-      // On met midi par défaut — l'heure exacte sera convenue sur Instagram
-      dateChoisie.setHours(12, 0, 0, 0);
+      // Un créneau doit être sélectionné dans la grille
+      if (!creneauSelectionne) {
+        setMessage('Choisis un créneau horaire pour ta livraison.');
+        return;
+      }
+
+      // On combine la date choisie avec l'heure du créneau sélectionné
+      // Ex: creneauSelectionne = "18:20" → on découpe en heures/minutes
+      const [heureCreneau, minuteCreneau] = creneauSelectionne.split(':').map(Number);
+      dateChoisie.setHours(heureCreneau, minuteCreneau, 0, 0);
       dateFinale = dateChoisie;
 
     } else {
@@ -189,6 +241,14 @@ function Checkout() {
       viderPanier();
       setMessage('');
     } catch (error) {
+      // Si le créneau vient d'être pris entre-temps (409), on recharge
+      // la grille pour montrer l'état à jour et on informe le client.
+      if (error.response?.status === 409) {
+        setCreneauSelectionne(null);
+        api.get(`/api/orders/creneaux?date=${dateLivraison}`)
+          .then(rep => setCreneaux(rep.data.creneaux))
+          .catch(e => console.error('Erreur rechargement créneaux :', e));
+      }
       setMessage(error.response?.data?.message || 'Erreur lors de la commande.');
     }
   };
@@ -262,7 +322,7 @@ function Checkout() {
                   >
                     @misulalouviere
                   </a>{' '}
-                  pour convenir de l'heure de livraison. Mentionne ton pseudo{' '}
+                  pour donner ton adresse. Mentionne ton pseudo{' '}
                   <strong>{utilisateur?.pseudo}</strong> et le code{' '}
                   <strong>{commandeValidee.codeRetrait}</strong>.
                 </p>
@@ -397,6 +457,9 @@ function Checkout() {
           Aucune transaction d'argent n'a lieu sur ce site.
         </p>
 
+        <p style={styles.rappelLocalite}>
+          Rappel : on livre uniquement sur La Louvière.
+        </p>
 
         {/* Liste des articles */}
         <section className="category-section">
@@ -471,7 +534,7 @@ function Checkout() {
                 </p>
               ) : (
                 <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#666' }}>
-                  +{PRIX_LIVRAISON.toFixed(2)} € - heure à convenir sur Instagram
+                  +{PRIX_LIVRAISON.toFixed(2)} €
                 </p>
               )}
             </div>
@@ -490,6 +553,7 @@ function Checkout() {
                 type="datetime-local"
                 value={dateRetrait}
                 min={dateMiniString}
+                max={dateMaxString}
                 onChange={e => setDateRetrait(e.target.value)}
                 style={styles.inputDate}
               />
@@ -500,26 +564,53 @@ function Checkout() {
                 Quel jour veux-tu être livré ?
               </label>
               <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '8px' }}>
-                Minimum 24h après la commande. L'heure sera convenue sur Instagram.
+                Minimum 24h après la commande.
               </p>
               <input
                 type="date"
                 value={dateLivraison}
                 min={dateMiniDateString}
+                max={dateMaxDateString}
                 onChange={e => setDateLivraison(e.target.value)}
                 style={styles.inputDate}
               />
-              <div style={styles.banniereInfo}>
-                Contacte-nous sur{' '}
-                
-                  <a href="https://www.instagram.com/misulalouviere"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: '#c0392b', fontWeight: 'bold' }}
-                >
-                  @misulalouviere
-                </a>{' '}
-                après ta commande pour convenir de l'heure de livraison.
+
+              {/* ── Grille des créneaux horaires ── */}
+              <div style={{ marginTop: '20px' }}>
+                <label style={styles.label}>
+                  Choisis un créneau
+                </label>
+
+                {chargementCreneaux ? (
+                  <p style={{ fontSize: '0.9rem', color: '#888' }}>
+                    Chargement des créneaux...
+                  </p>
+                ) : creneaux.length === 0 ? (
+                  <p style={{ fontSize: '0.9rem', color: '#888' }}>
+                    Aucun créneau disponible pour cette date.
+                  </p>
+                ) : (
+                  <div style={styles.grilleCreneaux}>
+                    {creneaux.map((creneau) => {
+                      const estSelectionne = creneauSelectionne === creneau.heureDebut;
+                      return (
+                        <button
+                          key={creneau.heureDebut}
+                          type="button"
+                          disabled={!creneau.disponible}
+                          onClick={() => setCreneauSelectionne(creneau.heureDebut)}
+                          style={{
+                            ...styles.caseCreneau,
+                            ...(estSelectionne ? styles.caseCreneauSelectionnee : {}),
+                            ...(!creneau.disponible ? styles.caseCreneauIndisponible : {}),
+                          }}
+                        >
+                          {creneau.heureDebut}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -579,9 +670,16 @@ const styles = {
   },
   simulation: {
     textAlign: 'center',
-    color: '#bbb',
-    fontSize: '0.75rem',
-    marginBottom: '10px',
+    color: '#999',
+    fontSize: '1rem',
+    fontWeight: 'bold',
+    marginBottom: '15px',
+  },
+  rappelLocalite: {
+    textAlign: 'center',
+    color: '#888',
+    fontSize: '0.8rem',
+    marginBottom: '15px',
   },
   banniereInfo: {
     backgroundColor: '#fff8e6',
@@ -696,6 +794,35 @@ const styles = {
     backgroundColor: '#faf7f2',
     boxSizing: 'border-box',
     outline: 'none',
+  },
+  // ── Grille de créneaux ──
+  grilleCreneaux: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
+    gap: '10px',
+  },
+  caseCreneau: {
+    padding: '10px 8px',
+    borderRadius: '8px',
+    border: '2px solid #c8b49c',
+    backgroundColor: '#faf7f2',
+    color: '#3b2f2f',
+    fontSize: '0.9rem',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  caseCreneauSelectionnee: {
+    border: '2px solid #c0392b',
+    backgroundColor: '#fdf0ee',
+    color: '#c0392b',
+  },
+  caseCreneauIndisponible: {
+    backgroundColor: '#f0f0f0',
+    color: '#bbb',
+    border: '2px solid #e0e0e0',
+    cursor: 'not-allowed',
+    textDecoration: 'line-through',
   },
   boutonSupprimer: {
     backgroundColor: 'transparent',

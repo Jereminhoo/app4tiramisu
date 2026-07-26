@@ -75,6 +75,28 @@ const genererCodeRetrait = () => {
 
 // Crée une commande avec date de retrait et option livraison
 const createOrder = async (id_utilisateur, prixTotal, lignes, dateRetrait, livraison) => {
+  
+    // Sécurité : on vérifie que la date demandée ne dépasse pas la fenêtre
+  // de réservation autorisée (ex: max 7 jours à l'avance). Sans ça, un client
+  // pourrait choisir une date bien après la période de disponibilité connue.
+  if (dateRetrait) {
+    const configService = require('./configService');
+    const config = await configService.getConfig();
+    const delaiMaxJours = parseInt(config.delaiMaxJours) || 7; // valeur de secours si absente
+
+    const dateLimite = new Date();
+    dateLimite.setDate(dateLimite.getDate() + delaiMaxJours);
+    dateLimite.setHours(23, 59, 59, 999); // fin de la journée limite
+
+    if (new Date(dateRetrait) > dateLimite) {
+      const erreur = new Error(
+        `Impossible de réserver plus de ${delaiMaxJours} jours à l'avance. Merci de choisir une date plus proche.`
+      );
+      erreur.statusCode = 400;
+      throw erreur;
+    }
+  }
+  
   return await prisma.$transaction(async (tx) => {
 
     // Sécurité anti-collision : si c'est une livraison , on revérifie

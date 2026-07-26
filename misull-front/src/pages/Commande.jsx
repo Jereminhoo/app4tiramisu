@@ -19,6 +19,9 @@ function Commande() {
     quantite: 1,
   });
   const [confirmation, setConfirmation] = useState('');
+  // Réponse du client à la question "es-tu de La Louvière ?"
+  // null = pas encore répondu, 'oui' ou 'non' = réponse donnée
+  const [reponseLocalite, setReponseLocalite] = useState(null);
   const { ajouterAuPanier, utilisateur, commandeValidee, panier } = useAuthStore();
   const navigate = useNavigate();
 
@@ -125,6 +128,37 @@ function Commande() {
           Nous sommes étudiants ! Prévois au moins <strong>1 jour</strong> entre
           ta commande et le retrait. Merci pour ta patience !
         </div>
+
+        {/* ── Bannière : zone de livraison ── */}
+        {reponseLocalite === null ? (
+          <div style={styles.banniereLocalite}>
+            <p style={{ margin: '0 0 10px 0' }}>
+              On livre uniquement sur La Louvière. Tu es de la région ?
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button onClick={() => setReponseLocalite('oui')} style={styles.boutonOui}>
+                Oui
+              </button>
+              <button onClick={() => setReponseLocalite('non')} style={styles.boutonNon}>
+                Non
+              </button>
+            </div>
+          </div>
+        ) : reponseLocalite === 'non' && (
+          <div style={styles.banniereLocaliteNon}>
+            On livre uniquement sur La Louvière. Tu peux quand même commander,
+            mais contacte-nous d'abord sur{' '}
+            
+              <a href="https://www.instagram.com/misulalouviere"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#c0392b', fontWeight: 'bold' }}
+            >
+              @misulalouviere
+            </a>{' '}
+            pour vérifier qu'on peut te livrer.
+          </div>
+        )}
 
         {/* ── Messages de confirmation / erreur ── */}
         {confirmation === 'success' && (
@@ -448,6 +482,44 @@ const styles = {
   barrePanierPrix: {
     fontWeight: 'bold',
     fontSize: '1.1rem',
+  },
+  banniereLocalite: {
+    backgroundColor: '#faf7f2',
+    border: '1px solid #c8b49c',
+    borderRadius: '8px',
+    padding: '15px 20px',
+    textAlign: 'center',
+    marginBottom: '25px',
+    fontSize: '0.95rem',
+    color: '#3b2f2f',
+  },
+  banniereLocaliteNon: {
+    backgroundColor: '#ffe6e6',
+    color: '#cc0000',
+    border: '1px solid #ffcccc',
+    borderRadius: '8px',
+    padding: '12px 20px',
+    textAlign: 'center',
+    marginBottom: '25px',
+    fontSize: '0.9rem',
+  },
+  boutonOui: {
+    backgroundColor: '#27ae60',
+    color: 'white',
+    border: 'none',
+    padding: '8px 20px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+  },
+  boutonNon: {
+    backgroundColor: '#c0392b',
+    color: 'white',
+    border: 'none',
+    padding: '8px 20px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: 'bold',
   },
 };
 

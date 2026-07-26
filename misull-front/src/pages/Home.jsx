@@ -160,7 +160,7 @@ function Home() {
       </main>
 
       {/* ── VERSION ── discrète, fixe en bas à droite */}
-      <p style={styles.version}>v4.0.0</p>
+      <p style={styles.version}>v4.1.0</p>
 
     </div>
   );
