@@ -43,11 +43,15 @@ model Supplement {
   lignesCommande LigneCommande[] @relation("LigneToSupplement")
 }
 
-// Les 3 goûts disponibles : Oreo, Spéculoos, Petit Beurre
+// Les goûts disponibles : Oreo, Spéculoos, Petit Beurre, Boudoir...
 model Gout {
-  id_gout        Int             @id @default(autoincrement())
-  nom            String
-  lignesCommande LigneCommande[]
+  id_gout          Int             @id @default(autoincrement())
+  nom              String
+  // Ajustement de prix par rapport au prix de base de la taille.
+  // 0 = aucun changement (cas normal), négatif = moins cher, positif = plus cher.
+  // Ex: Boudoir = -1.00 (1€ de moins que le prix de base)
+  modificateurPrix Float           @default(0)
+  lignesCommande   LigneCommande[]
 }
 
 model Commande {

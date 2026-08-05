@@ -49,15 +49,16 @@ async function main() {
     ]
   });
 
-  // Les 3 goûts disponibles
+// Boudoir est moins cher à produire, d'où le modificateurPrix négatif
   await prisma.gout.createMany({
     data: [
       { nom: 'Oreo' },
       { nom: 'Spéculoos' },
-      { nom: 'Petit Beurre' }
+      { nom: 'Petit Beurre' },
+      { nom: 'Boudoir', modificateurPrix: -1.00 }
     ]
   });
-
+  
   // ── Configuration par défaut ──
   // Ces valeurs sont modifiables ensuite depuis l'onglet Configuration de l'admin,
   // mais il faut qu'elles existent dès le départ pour que le site fonctionne.

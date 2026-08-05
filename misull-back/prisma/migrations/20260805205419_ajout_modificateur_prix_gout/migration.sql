@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Gout" ADD COLUMN     "modificateurPrix" DOUBLE PRECISION NOT NULL DEFAULT 0;

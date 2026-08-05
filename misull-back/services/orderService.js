@@ -73,10 +73,51 @@ const genererCodeRetrait = () => {
   return code;
 };
 
+// Recalcule le prix total d'une commande à partir des vraies données en base,
+// plutôt que de faire confiance au prixTotal envoyé par le frontend.
+// Sécurité : empêche un client de manipuler le prix en modifiant la requête.
+const calculerPrixTotal = async (lignes, livraison) => {
+  let total = 0;
+
+  for (const ligne of lignes) {
+    // On récupère le vrai prix de la taille choisie
+    const taille = await prisma.taille.findUnique({
+      where: { id_taille: ligne.id_taille }
+    });
+    if (!taille) throw new Error('Taille introuvable.');
+
+    // On récupère le goût choisi, avec son modificateur de prix
+    const gout = await prisma.gout.findUnique({
+      where: { id_gout: ligne.id_gout }
+    });
+    if (!gout) throw new Error('Goût introuvable.');
+
+    // On récupère les vrais prix des suppléments choisis
+    const supplements = await prisma.supplement.findMany({
+      where: { id_supplement: { in: ligne.supplements } }
+    });
+
+    const prixSupplements = supplements.reduce((somme, s) => somme + s.prix, 0);
+
+    // Prix d'une unité = prix de la taille + modificateur du goût + suppléments
+    const prixUnite = taille.prix + gout.modificateurPrix + prixSupplements;
+
+    total += prixUnite * ligne.quantite;
+  }
+
+  // Ajout du prix fixe de livraison si applicable
+  if (livraison) {
+    total += 2.50;
+  }
+
+  // On arrondit à 2 décimales pour éviter les erreurs de calcul flottant
+  return Math.round(total * 100) / 100;
+};
+
 // Crée une commande avec date de retrait et option livraison
 const createOrder = async (id_utilisateur, prixTotal, lignes, dateRetrait, livraison) => {
-  
-    // Sécurité : on vérifie que la date demandée ne dépasse pas la fenêtre
+
+  // Sécurité : on vérifie que la date demandée ne dépasse pas la fenêtre
   // de réservation autorisée (ex: max 7 jours à l'avance). Sans ça, un client
   // pourrait choisir une date bien après la période de disponibilité connue.
   if (dateRetrait) {
@@ -96,7 +137,11 @@ const createOrder = async (id_utilisateur, prixTotal, lignes, dateRetrait, livra
       throw erreur;
     }
   }
-  
+
+  // Sécurité : on recalcule le vrai prix total à partir des données en base,
+  // on ne fait JAMAIS confiance au prixTotal envoyé par le frontend.
+  const vraiPrixTotal = await calculerPrixTotal(lignes, livraison);
+
   return await prisma.$transaction(async (tx) => {
 
     // Sécurité anti-collision : si c'est une livraison , on revérifie
@@ -139,7 +184,7 @@ const createOrder = async (id_utilisateur, prixTotal, lignes, dateRetrait, livra
     const nouvelleCommande = await tx.commande.create({
       data: {
         id_utilisateur,
-        prixTotal,
+        prixTotal: vraiPrixTotal, // On utilise le prix recalculé, pas celui du frontend
         dateRetrait: dateRetrait ? new Date(dateRetrait) : null,
         livraison: livraison || false,
         codeRetrait, // Code unique généré automatiquement
@@ -241,4 +286,13 @@ const getCreneauxDisponibles = async (dateString) => {
 
   return creneaux;
 };
-module.exports = { createOrder, getHistorique, annulerCommande, getStatut, genererCodeRetrait, getCreneauxDisponibles };
+
+module.exports = {
+  createOrder,
+  getHistorique,
+  annulerCommande,
+  getStatut,
+  genererCodeRetrait,
+  getCreneauxDisponibles,
+  calculerPrixTotal
+};

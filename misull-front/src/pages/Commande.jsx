@@ -72,10 +72,13 @@ function Commande() {
   };
 
   // ─── CALCUL DU PRIX ───
-  const calculerPrix = () => {
+ const calculerPrix = () => {
     if (!selection.taille) return 0;
     const prixSupplements = selection.supplements.reduce((total, s) => total + s.prix, 0);
-    return ((selection.taille.prix + prixSupplements) * selection.quantite).toFixed(2);
+    // Le modificateur du goût (ex: Boudoir = -1€) s'ajoute au prix de base.
+    // On utilise 0 par défaut si aucun goût n'est encore choisi.
+    const modificateurGout = selection.gout?.modificateurPrix || 0;
+    return ((selection.taille.prix + modificateurGout + prixSupplements) * selection.quantite).toFixed(2);
   };
 
   // ─── TOTAL DU PANIER ───
@@ -247,6 +250,11 @@ function Commande() {
                     }}
                   >
                     {gout.nom}
+                    {gout.modificateurPrix !== 0 && (
+                      <span style={{ marginLeft: '6px', fontSize: '0.85em', opacity: 0.85 }}>
+                        ({gout.modificateurPrix > 0 ? '+' : ''}{gout.modificateurPrix.toFixed(2)} €)
+                      </span>
+                    )}
                   </span>
                 );
               })}
